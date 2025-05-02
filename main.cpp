@@ -23,6 +23,7 @@ void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &ma
 }
 
 
+
 int main() {
     sf::RenderWindow window(sf::VideoMode({800, 600}), "SandSim");
 

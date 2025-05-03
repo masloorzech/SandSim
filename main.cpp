@@ -3,9 +3,19 @@
 #include <vector>
 
 #define PIXEL_SIZE 5
-typedef std::vector<std::vector<bool>> map_t;
 
-void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<std::vector<bool>> &map, size_t width, size_t height) {
+#define RADIUS 2
+
+#define SAND_COLOR sf::Color(242,210,169)
+
+struct tile{
+    bool value;
+    sf::Color color;
+};
+
+typedef std::vector<std::vector<tile>> map_t;
+
+void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const map_t &map, size_t width, size_t height) {
 
 
     sf::RectangleShape frame(sf::Vector2f(width*PIXEL_SIZE, height*PIXEL_SIZE));
@@ -21,8 +31,8 @@ void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<st
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
             tile.setPosition(sf::Vector2f (offset.x + (x* PIXEL_SIZE), (offset.y + y * PIXEL_SIZE)));
-            if (map[y][x]) {
-                tile.setFillColor(sf::Color::White);
+            if (map[y][x].value) {
+                tile.setFillColor(map[y][x].color);
             } else {
                 tile.setFillColor(sf::Color::Black);
             }
@@ -33,13 +43,14 @@ void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<st
 }
 
 void apply_physics(map_t& map){
-    std::vector<std::vector<bool>> map_copy = map;
+    map_t map_copy = map;
 
     for (int y = map.size() - 2; y >= 0; y--) {
         for (size_t x = 0; x < map[y].size(); x++) {
-            if (map[y][x] && !map[y+1][x]) {
-                map_copy[y][x] = false;
-                map_copy[y+1][x] = true;
+            if (map[y][x].value && !map[y+1][x].value) {
+                map_copy[y][x].value = false;
+                map_copy[y+1][x].value = true;
+                map_copy[y+1][x].color = map_copy[y][x].color;
             }
         }
     }
@@ -54,7 +65,20 @@ void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset)
     int grid_y = (mousePos.y - offset.y) / PIXEL_SIZE;
 
     if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
-        map[grid_y][grid_x] = true;
+
+        for (int dy = -RADIUS; dy <= RADIUS; ++dy) {
+            for (int dx = -RADIUS; dx <= RADIUS; ++dx) {
+                int x = grid_x + dx;
+                int y = grid_y + dy;
+
+                if (x >= 0 && x < map[0].size() && y >= 0 && y < map.size()) {
+                    if (dx * dx + dy * dy <= RADIUS * RADIUS) {
+                        map[y][x].value = true;
+                        map[y][x].color = SAND_COLOR;;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -65,7 +89,7 @@ int main() {
 
     const size_t width = 128;
     const size_t height = 64;
-    std::vector<std::vector<bool>> map(height, std::vector<bool>(width)); // [y][x]
+    map_t map(height, std::vector<tile>(width));
 
     auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x/2 - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y/2 - (height*PIXEL_SIZE)/2));
 

@@ -2,9 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-#define PIXEL_SIZE 5
+#define PIXEL_SIZE 3
 
-#define RADIUS 2
+#define RADIUS 3
 
 #define SAND_COLOR sf::Color(242,210,169)
 
@@ -51,6 +51,14 @@ void apply_physics(map_t& map){
                 map_copy[y][x].value = false;
                 map_copy[y+1][x].value = true;
                 map_copy[y+1][x].color = map_copy[y][x].color;
+            }else if (map[y][x].value && x+1 < map[y].size() && !map[y+1][x+1].value){
+                map_copy[y][x].value = false;
+                map_copy[y+1][x+1].value = true;
+                map_copy[y+1][x+1].color = map_copy[y][x].color;
+            }else if (map[y][x].value && x-1 >= 0 &&!map[y+1][x-1].value){
+                map_copy[y][x].value = false;
+                map_copy[y+1][x-1].value = true;
+                map_copy[y+1][x-1].color = map_copy[y][x].color;
             }
         }
     }
@@ -88,7 +96,8 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
 
     const size_t width = 128;
-    const size_t height = 64;
+    const size_t height = 128;
+
     map_t map(height, std::vector<tile>(width));
 
     auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x/2 - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y/2 - (height*PIXEL_SIZE)/2));

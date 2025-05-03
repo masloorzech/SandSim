@@ -2,14 +2,21 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-#define PIXEL_SIZE 25
-
+#define PIXEL_SIZE 5
+#define DEBUG True
 typedef std::vector<std::vector<bool>> map_t;
 
-void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &map, size_t width, size_t height) {
+void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<std::vector<bool>> &map, size_t width, size_t height) {
+
+    sf::RectangleShape frame(sf::Vector2f(width*PIXEL_SIZE, height*PIXEL_SIZE));
+    frame.setOutlineThickness(1);
+    frame.setOutlineColor(sf::Color::White);
+    frame.setFillColor(sf::Color::Black);
+    frame.setPosition(sf::Vector2f(0,0));
+
+    window.draw(frame);
+
     sf::RectangleShape tile(sf::Vector2f(PIXEL_SIZE, PIXEL_SIZE));
-    tile.setOutlineThickness(1);
-    tile.setOutlineColor(sf::Color::White);
 
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
@@ -22,10 +29,11 @@ void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &ma
             window.draw(tile);
         }
     }
+
 }
 
 void apply_physics(map_t& map){
-    std::vector<std::vector<bool>> map_copy = map; // głęboka kopia startowa
+    std::vector<std::vector<bool>> map_copy = map;
 
     for (int y = map.size() - 2; y >= 0; y--) {
         for (size_t x = 0; x < map[y].size(); x++) {
@@ -51,11 +59,14 @@ void place_sand(map_t& map, const sf::RenderWindow& window){
 }
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "SandSim");
 
-    const size_t width = 20;
-    const size_t height = 20;
+    sf::Vector2f window_size = sf::Vector2f(800,600);
+    sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
+
+    const size_t width = 128;
+    const size_t height = 64;
     std::vector<std::vector<bool>> map(height, std::vector<bool>(width)); // [y][x]
+    auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y - (height*PIXEL_SIZE)/2));
 
     while (window.isOpen()) {
 
@@ -72,7 +83,7 @@ int main() {
 
         apply_physics(map);
 
-        draw_map(window, map, width, height);
+        draw_map(window, draw_map_offset,map, width, height);
 
         window.display();
     }

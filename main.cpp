@@ -22,6 +22,21 @@ void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &ma
     }
 }
 
+void apply_physics(std::vector<std::vector<bool>>& map){
+    std::vector<std::vector<bool>> map_copy = map; // głęboka kopia startowa
+
+    for (int y = map.size() - 2; y >= 0; y--) {
+        for (size_t x = 0; x < map[y].size(); x++) {
+            if (map[y][x] && !map[y+1][x]) {
+                map_copy[y][x] = false;
+                map_copy[y+1][x] = true;
+            }
+        }
+    }
+
+    map = map_copy;
+}
+
 
 
 int main() {
@@ -30,8 +45,6 @@ int main() {
     const size_t width = 20;
     const size_t height = 20;
     std::vector<std::vector<bool>> map(height, std::vector<bool>(width)); // [y][x]
-
-    map[0][10] = true;
 
     while (window.isOpen()) {
 
@@ -42,9 +55,9 @@ int main() {
 
         window.clear();
 
+        apply_physics(map);
+
         draw_map(window, map, width, height);
-
-
 
         window.display();
     }

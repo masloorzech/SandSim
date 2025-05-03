@@ -42,7 +42,6 @@ void apply_physics(map_t& map){
 void place_sand(map_t& map, const sf::RenderWindow& window){
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
-    std::cout<<mousePos.x << " " << mousePos.y;
     int grid_x = mousePos.x / PIXEL_SIZE;
     int grid_y = mousePos.y / PIXEL_SIZE;
 

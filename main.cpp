@@ -3,16 +3,16 @@
 #include <vector>
 
 #define PIXEL_SIZE 5
-#define DEBUG True
 typedef std::vector<std::vector<bool>> map_t;
 
 void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<std::vector<bool>> &map, size_t width, size_t height) {
+
 
     sf::RectangleShape frame(sf::Vector2f(width*PIXEL_SIZE, height*PIXEL_SIZE));
     frame.setOutlineThickness(1);
     frame.setOutlineColor(sf::Color::White);
     frame.setFillColor(sf::Color::Black);
-    frame.setPosition(sf::Vector2f(0,0));
+    frame.setPosition(sf::Vector2f(offset.x+0,offset.y+0));
 
     window.draw(frame);
 
@@ -20,7 +20,7 @@ void draw_map(sf::RenderWindow &window, sf::Vector2f offset,const std::vector<st
 
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
-            tile.setPosition(sf::Vector2f (x* PIXEL_SIZE, y * PIXEL_SIZE));
+            tile.setPosition(sf::Vector2f (offset.x + (x* PIXEL_SIZE), (offset.y + y * PIXEL_SIZE)));
             if (map[y][x]) {
                 tile.setFillColor(sf::Color::White);
             } else {
@@ -47,11 +47,11 @@ void apply_physics(map_t& map){
     map = map_copy;
 }
 
-void place_sand(map_t& map, const sf::RenderWindow& window){
+void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset){
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
-    int grid_x = mousePos.x / PIXEL_SIZE;
-    int grid_y = mousePos.y / PIXEL_SIZE;
+    int grid_x = (mousePos.x - offset.x) / PIXEL_SIZE;
+    int grid_y = (mousePos.y - offset.y) / PIXEL_SIZE;
 
     if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
         map[grid_y][grid_x] = true;
@@ -66,7 +66,8 @@ int main() {
     const size_t width = 128;
     const size_t height = 64;
     std::vector<std::vector<bool>> map(height, std::vector<bool>(width)); // [y][x]
-    auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y - (height*PIXEL_SIZE)/2));
+
+    auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x/2 - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y/2 - (height*PIXEL_SIZE)/2));
 
     while (window.isOpen()) {
 
@@ -74,7 +75,7 @@ int main() {
             if (event->is<sf::Event::Closed>())
                 window.close();
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-                place_sand(map,window);
+                place_sand(window, map,draw_map_offset);
             }
 
             }

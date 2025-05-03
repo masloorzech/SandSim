@@ -4,6 +4,8 @@
 
 #define PIXEL_SIZE 25
 
+typedef std::vector<std::vector<bool>> map_t;
+
 void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &map, size_t width, size_t height) {
     sf::RectangleShape tile(sf::Vector2f(PIXEL_SIZE, PIXEL_SIZE));
     tile.setOutlineThickness(1);
@@ -22,7 +24,7 @@ void draw_map(sf::RenderWindow &window, const std::vector<std::vector<bool>> &ma
     }
 }
 
-void apply_physics(std::vector<std::vector<bool>>& map){
+void apply_physics(map_t& map){
     std::vector<std::vector<bool>> map_copy = map; // głęboka kopia startowa
 
     for (int y = map.size() - 2; y >= 0; y--) {
@@ -37,7 +39,17 @@ void apply_physics(std::vector<std::vector<bool>>& map){
     map = map_copy;
 }
 
+void place_sand(map_t& map, const sf::RenderWindow& window){
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
+    std::cout<<mousePos.x << " " << mousePos.y;
+    int grid_x = mousePos.x / PIXEL_SIZE;
+    int grid_y = mousePos.y / PIXEL_SIZE;
+
+    if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
+        map[grid_y][grid_x] = true;
+    }
+}
 
 int main() {
     sf::RenderWindow window(sf::VideoMode({800, 600}), "SandSim");
@@ -51,7 +63,11 @@ int main() {
         while (const std::optional event = window.pollEvent()){
             if (event->is<sf::Event::Closed>())
                 window.close();
-        }
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
+                place_sand(map,window);
+            }
+
+            }
 
         window.clear();
 

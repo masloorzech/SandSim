@@ -1,10 +1,14 @@
+#include <cmath>
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <cmath>
 
-#define PIXEL_SIZE 1
+#define PIXEL_SIZE 2
 
 #define RADIUS 4
+
+
 
 #define SAND_COLOR sf::Color(242,210,169)
 
@@ -13,7 +17,33 @@ struct tile{
     sf::Color color;
 };
 
+int color_incremeter = 0;
+
+sf::Color HSLtoRGB(float h, float s, float l) {
+    float c = (1 - std::fabs(2 * l - 1)) * s;
+    float x = c * (1 - std::fabs(std::fmod(h / 60.0f, 2) - 1));
+    float m = l - c / 2;
+
+    float r, g, b;
+    if (h >= 0 && h < 60) {
+        r = c; g = x; b = 0;
+    } else if (h >= 60 && h < 120) {
+        r = x; g = c; b = 0;
+    } else if (h >= 120 && h < 180) {
+        r = 0; g = c; b = x;
+    } else if (h >= 180 && h < 240) {
+        r = 0; g = x; b = c;
+    } else if (h >= 240 && h < 300) {
+        r = x; g = 0; b = c;
+    } else {
+        r = c; g = 0; b = x;
+    }
+
+    return sf::Color((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+
 typedef std::vector<std::vector<tile>> map_t;
+
 
 void draw_map(sf::RenderWindow& window, sf::Vector2f offset, const map_t& map, size_t width, size_t height) {
 
@@ -60,7 +90,6 @@ void apply_physics(map_t& map) {
     for (int y = map.size() - 2; y >= 0; y--) {
         for (size_t x = 0; x < map[y].size(); x++) {
             if (map[y][x].value) {
-                // Move down
                 if (!map[y+1][x].value) {
                     map[y][x].value = false;
                     map[y+1][x].value = true;
@@ -81,7 +110,7 @@ void apply_physics(map_t& map) {
     }
 }
 
-void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset) {
+void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, float time) {
 
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     int grid_x = (mousePos.x - offset.x) / PIXEL_SIZE;
@@ -92,11 +121,12 @@ void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset)
             for (int dx = -RADIUS; dx <= RADIUS; ++dx) {
                 int x = grid_x + dx;
                 int y = grid_y + dy;
-
                 if (x >= 0 && x < map[0].size() && y >= 0 && y < map.size()) {
-                    if (dx * dx + dy * dy <= RADIUS * RADIUS) {
-                        map[y][x].value = true;
-                        map[y][x].color = SAND_COLOR;
+                    if (map[y][x].value != true){
+                        if (dx * dx + dy * dy <= RADIUS * RADIUS) {
+                            map[y][x].value = true;
+                            map[y][x].color = HSLtoRGB(std::fmod(time + (x + y) * 20.0f, 360.0f), 0.6f, 0.5f);
+                        }
                     }
                 }
             }
@@ -109,12 +139,14 @@ int main() {
     sf::Vector2f window_size = sf::Vector2f(800,600);
     sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
 
-    const size_t width = 512;
-    const size_t height = 512;
+    const size_t width = 256;
+    const size_t height = 256;
 
     map_t map(height, std::vector<tile>(width));
 
     auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x/2 - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y/2 - (height*PIXEL_SIZE)/2));
+
+    float time = 0.0f;
 
     while (window.isOpen()) {
 
@@ -123,7 +155,7 @@ int main() {
                 window.close();
             }
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-                place_sand(window, map,draw_map_offset);
+                place_sand(window, map,draw_map_offset, time);
                 }
             }
 
@@ -134,6 +166,8 @@ int main() {
         draw_map(window, draw_map_offset,map, width, height);
 
         window.display();
+        time += 0.001f;
+        if (time >= 360.0f) time = 0.0f;
     }
 
     return 0;

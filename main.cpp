@@ -2,9 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-#define PIXEL_SIZE 3
+#define PIXEL_SIZE 2
 
-#define RADIUS 3
+#define RADIUS 2
 
 #define SAND_COLOR sf::Color(242,210,169)
 
@@ -95,8 +95,8 @@ int main() {
     sf::Vector2f window_size = sf::Vector2f(800,600);
     sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
 
-    const size_t width = 128;
-    const size_t height = 128;
+    const size_t width = 32;
+    const size_t height = 32;
 
     map_t map(height, std::vector<tile>(width));
 

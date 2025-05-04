@@ -4,7 +4,6 @@ project(Sand_simulation)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# Sprawdzamy system operacyjny
 if(WIN32)
     message(STATUS "Kompilacja na Windows")
     set(SFML_DIR "C:/libs/SFML-3.0.0/lib/cmake/SFML")

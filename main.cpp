@@ -8,16 +8,23 @@
 #include "components/Slider.h"
 #include "utils/color_utils.h"
 
-#define PIXEL_SIZE 2
+#define PIXEL_SIZE 1
+
+enum TILE_TYPE {
+    AIR =0,
+    SAND = 1,
+    SOLID = 2
+};
 
 struct tile{
-    bool value;
+    TILE_TYPE value;
     sf::Color color;
 };
 
 enum BRUSH_MODES{
-    STANDARD,
-    RUBBER
+    GRAVITY_BRUSH,
+    RUBBER,
+    SOLID_BRUSH
 };
 
 typedef std::vector<std::vector<tile>> map_t;
@@ -37,7 +44,7 @@ void draw_map(sf::RenderWindow& window, sf::Vector2f offset, const map_t& map, s
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
             size_t index = (y * width + x) * 6;
-            sf::Color color = map[y][x].value ? map[y][x].color : sf::Color::Black;
+            sf::Color color = map[y][x].value!=AIR ? map[y][x].color : sf::Color::Black;
 
             float xPos = offset.x + (x * PIXEL_SIZE);
             float yPos = offset.y + (y * PIXEL_SIZE);
@@ -63,60 +70,64 @@ void draw_map(sf::RenderWindow& window, sf::Vector2f offset, const map_t& map, s
     window.draw(vertices);
 }
 
+void try_move_tile(map_t& map, int x, int y, int new_x, int new_y) {
+    if (new_x >= 0 && new_x < map[0].size() && new_y >= 0 && new_y < map.size() && map[new_y][new_x].value == AIR) {
+        map[new_y][new_x] = map[y][x];
+        map[y][x].value = AIR;
+    }
+}
+
 void apply_physics(map_t& map) {
-    for (int y = map.size() - 2; y >= 0; y--) {
-        for (size_t x = 0; x < map[y].size(); x++) {
-            if (map[y][x].value) {
-                if (!map[y+1][x].value) {
-                    map[y][x].value = false;
-                    map[y+1][x].value = true;
-                    map[y+1][x].color = map[y][x].color;
-                }
-                else if (x+1 < map[y].size() && !map[y+1][x+1].value) {
-                    map[y][x].value = false;
-                    map[y+1][x+1].value = true;
-                    map[y+1][x+1].color = map[y][x].color;
-                }
-                else if (x-1 >= 0 && !map[y+1][x-1].value) {
-                    map[y][x].value = false;
-                    map[y+1][x-1].value = true;
-                    map[y+1][x-1].color = map[y][x].color;
+    for (int y = map.size() - 2; y >= 0; --y) {
+        for (size_t x = 0; x < map[y].size(); ++x) {
+            if (map[y][x].value == SAND) {
+                try_move_tile(map, x, y, x, y+1);
+                if (rand()%100<50) {
+                    try_move_tile(map, x, y, x+1, y+1);
+                } else {
+                    try_move_tile(map, x, y, x-1, y+1);
                 }
             }
         }
     }
 }
 
-void use_brush(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, int radius, sf::Color color, enum BRUSH_MODES mode) {
-
+void use_brush(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, int radius, sf::Color color, BRUSH_MODES mode) {
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     int grid_x = (mousePos.x - offset.x) / PIXEL_SIZE;
     int grid_y = (mousePos.y - offset.y) / PIXEL_SIZE;
 
-    if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
-        for (int dy = -radius; dy <= radius; ++dy) {
-            for (int dx = -radius; dx <= radius; ++dx) {
-                int x = grid_x + dx;
-                int y = grid_y + dy;
-                if (x >= 0 && x < map[0].size() && y >= 0 && y < map.size()) {
-                    if (mode == STANDARD) {
-                        if (map[y][x].value != true){
-                            if (dx * dx + dy * dy <= radius * radius) {
-                                map[y][x].value = true;
-                                map[y][x].color = color;
-                            }
-                        }
-                    }
-                    else if (mode == RUBBER) {
-                        if (map[y][x].value == true){
-                            if (dx * dx + dy * dy <= radius * radius) {
-                                map[y][x].value = false;
-                                map[y][x].color = color;
-                            }
-                        }
-                    }
+    if (grid_x < 0 || grid_x >= map[0].size() || grid_y < 0 || grid_y >= map.size()) return;
 
-                }
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            if (dx*dx + dy*dy > radius*radius) continue;
+
+            int x = grid_x + dx;
+            int y = grid_y + dy;
+            if (x < 0 || x >= map[0].size() || y < 0 || y >= map.size()) continue;
+
+            tile& t = map[y][x];
+
+            switch (mode) {
+                case GRAVITY_BRUSH:
+                    if (t.value != SAND && t.value != SOLID) {
+                        t.value = SAND;
+                        t.color = color;
+                    }
+                break;
+                case RUBBER:
+                    if (t.value == SAND || t.value == SOLID) {
+                        t.value = AIR;
+                        t.color = color;
+                    }
+                break;
+                case SOLID_BRUSH:
+                    if (t.value == AIR) {
+                        t.value = SOLID;
+                        t.color = color;
+                    }
+                break;
             }
         }
     }
@@ -150,11 +161,11 @@ std::vector<Slider> init_color_sliders(int x, int y, int x_spcacing,int y_spacin
 
 int main() {
 
-    sf::Vector2f window_size = sf::Vector2f(800,600);
+    sf::Vector2f window_size = sf::Vector2f(1280,840);
     sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
 
-    const size_t width = 256;
-    const size_t height = 256;
+    const size_t width = 512;
+    const size_t height = 512;
 
     map_t map(height, std::vector<tile>(width));
 
@@ -182,6 +193,7 @@ int main() {
     color_preview.setOutlineThickness(1);
     color_preview.setPosition(sf::Vector2f(10,75));
 
+    BRUSH_MODES brush_mode = GRAVITY_BRUSH;
 
     while (window.isOpen()) {
 
@@ -200,7 +212,7 @@ int main() {
             color_preview.setFillColor(color);
 
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, STANDARD);
+                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, brush_mode);
             }
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
                 use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, RUBBER);
@@ -223,6 +235,7 @@ int main() {
 
         window.display();
     }
+
 
     return 0;
 }

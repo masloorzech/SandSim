@@ -91,4 +91,5 @@ void Slider::set_slider_value(int value) {
     else {
         this->slider_value = value;
     }
+    slider_value_label.setString(std::to_string(slider_value+1));
 }

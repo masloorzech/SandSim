@@ -2,48 +2,25 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <filesystem>
 #include <cmath>
 
+#include "components/Slider.h"
+#include "utils/color_utils.h"
+
 #define PIXEL_SIZE 2
-
-#define RADIUS 4
-
-
-
-#define SAND_COLOR sf::Color(242,210,169)
 
 struct tile{
     bool value;
     sf::Color color;
 };
 
-int color_incremeter = 0;
-
-sf::Color HSLtoRGB(float h, float s, float l) {
-    float c = (1 - std::fabs(2 * l - 1)) * s;
-    float x = c * (1 - std::fabs(std::fmod(h / 60.0f, 2) - 1));
-    float m = l - c / 2;
-
-    float r, g, b;
-    if (h >= 0 && h < 60) {
-        r = c; g = x; b = 0;
-    } else if (h >= 60 && h < 120) {
-        r = x; g = c; b = 0;
-    } else if (h >= 120 && h < 180) {
-        r = 0; g = c; b = x;
-    } else if (h >= 180 && h < 240) {
-        r = 0; g = x; b = c;
-    } else if (h >= 240 && h < 300) {
-        r = x; g = 0; b = c;
-    } else {
-        r = c; g = 0; b = x;
-    }
-
-    return sf::Color((r + m) * 255, (g + m) * 255, (b + m) * 255);
-}
+enum BRUSH_MODES{
+    STANDARD,
+    RUBBER
+};
 
 typedef std::vector<std::vector<tile>> map_t;
-
 
 void draw_map(sf::RenderWindow& window, sf::Vector2f offset, const map_t& map, size_t width, size_t height) {
 
@@ -110,28 +87,65 @@ void apply_physics(map_t& map) {
     }
 }
 
-void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, float time) {
+void use_brush(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, int radius, sf::Color color, enum BRUSH_MODES mode) {
 
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     int grid_x = (mousePos.x - offset.x) / PIXEL_SIZE;
     int grid_y = (mousePos.y - offset.y) / PIXEL_SIZE;
 
     if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
-        for (int dy = -RADIUS; dy <= RADIUS; ++dy) {
-            for (int dx = -RADIUS; dx <= RADIUS; ++dx) {
+        for (int dy = -radius; dy <= radius; ++dy) {
+            for (int dx = -radius; dx <= radius; ++dx) {
                 int x = grid_x + dx;
                 int y = grid_y + dy;
                 if (x >= 0 && x < map[0].size() && y >= 0 && y < map.size()) {
-                    if (map[y][x].value != true){
-                        if (dx * dx + dy * dy <= RADIUS * RADIUS) {
-                            map[y][x].value = true;
-                            map[y][x].color = HSLtoRGB(std::fmod(time + (x + y) * 20.0f, 360.0f), 0.6f, 0.5f);
+                    if (mode == STANDARD) {
+                        if (map[y][x].value != true){
+                            if (dx * dx + dy * dy <= radius * radius) {
+                                map[y][x].value = true;
+                                map[y][x].color = color;
+                            }
                         }
                     }
+                    else if (mode == RUBBER) {
+                        if (map[y][x].value == true){
+                            if (dx * dx + dy * dy <= radius * radius) {
+                                map[y][x].value = false;
+                                map[y][x].color = color;
+                            }
+                        }
+                    }
+
                 }
             }
         }
     }
+}
+
+std::vector<Slider> init_color_sliders(int x, int y, int x_spcacing,int y_spacing, sf::Font& font) {
+
+    Slider R_slider = Slider(sf::Vector2f(x,y),sf::Vector2f(100,25),0,255, font);
+    R_slider.set_text("Red Value");
+    R_slider.set_slider_color(sf::Color::Red);
+    R_slider.set_slider_value(128);
+
+    Slider G_slider = Slider(sf::Vector2f(x+x_spcacing,y+y_spacing),sf::Vector2f(100,25),0,255, font);
+    G_slider.set_text("Green Value");
+    G_slider.set_slider_color(sf::Color::Green);
+    G_slider.set_slider_value(128);
+
+    Slider B_slider = Slider(sf::Vector2f(x+2*x_spcacing,y+ 2*y_spacing ),sf::Vector2f(100,25),0,255, font);
+    B_slider.set_text("Blue Value");
+    B_slider.set_slider_color(sf::Color::Blue);
+    B_slider.set_slider_value(128);
+
+    std::vector brush_color_sliders = std::vector<Slider>();
+
+    brush_color_sliders.push_back(R_slider);
+    brush_color_sliders.push_back(G_slider);
+    brush_color_sliders.push_back(B_slider);
+
+    return brush_color_sliders;
 }
 
 int main() {
@@ -146,18 +160,52 @@ int main() {
 
     auto draw_map_offset = sf::Vector2f(static_cast<unsigned int >(window_size.x/2 - (width*PIXEL_SIZE)/2), static_cast<unsigned int >(window_size.y/2 - (height*PIXEL_SIZE)/2));
 
-    float time = 0.0f;
+    auto pixel_font = sf::Font();
+    if (!pixel_font.openFromFile("assets/fonts/Pixel-Regular.ttf")) {
+        std::cerr << "Failed to load font." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+    Slider slider = Slider(sf::Vector2f(10,10),sf::Vector2f(100,25),0,20, pixel_font);
+    slider.set_text("Brush Size");
+    slider.set_slider_color(sf::Color(0,102,51));
+    slider.set_slider_value(10);
+
+    auto brush_color_sliders = init_color_sliders(10,200,0,50, pixel_font);
+
+
+    sf::RectangleShape color_preview(sf::Vector2f(100,100));
+    color_preview.setOutlineColor(sf::Color::White);
+    auto start_color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(), brush_color_sliders[2].get_slider_value());
+    color_preview.setFillColor(start_color);
+    color_preview.setOutlineThickness(1);
+    color_preview.setPosition(sf::Vector2f(10,75));
+
 
     while (window.isOpen()) {
 
-        while (const std::optional event = window.pollEvent()){
+        while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-                place_sand(window, map,draw_map_offset, time);
-                }
+
+            slider.logic(window);
+
+            for (auto& brush_color_slider : brush_color_sliders) {
+                brush_color_slider.logic(window);
             }
+            auto color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(), brush_color_sliders[2].get_slider_value());
+
+            color_preview.setFillColor(color);
+
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, STANDARD);
+            }
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
+                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, RUBBER);
+            }
+        }
 
         window.clear();
 
@@ -165,9 +213,15 @@ int main() {
 
         draw_map(window, draw_map_offset,map, width, height);
 
+        slider.draw(window);
+
+        for (auto& brush_color_slider : brush_color_sliders) {
+            brush_color_slider.draw(window);
+        }
+
+        window.draw(color_preview);
+
         window.display();
-        time += 0.001f;
-        if (time >= 360.0f) time = 0.0f;
     }
 
     return 0;

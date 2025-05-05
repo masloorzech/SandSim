@@ -2,13 +2,10 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <filesystem>
 #include <cmath>
 
 #define PIXEL_SIZE 2
-
-#define RADIUS 4
-
-
 
 #define SAND_COLOR sf::Color(242,210,169)
 
@@ -110,20 +107,20 @@ void apply_physics(map_t& map) {
     }
 }
 
-void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, float time) {
+void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset, float time, int radius) {
 
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     int grid_x = (mousePos.x - offset.x) / PIXEL_SIZE;
     int grid_y = (mousePos.y - offset.y) / PIXEL_SIZE;
 
     if (grid_x >= 0 && grid_x < map[0].size() && grid_y >= 0 && grid_y < map.size()) {
-        for (int dy = -RADIUS; dy <= RADIUS; ++dy) {
-            for (int dx = -RADIUS; dx <= RADIUS; ++dx) {
+        for (int dy = -radius; dy <= radius; ++dy) {
+            for (int dx = -radius; dx <= radius; ++dx) {
                 int x = grid_x + dx;
                 int y = grid_y + dy;
                 if (x >= 0 && x < map[0].size() && y >= 0 && y < map.size()) {
                     if (map[y][x].value != true){
-                        if (dx * dx + dy * dy <= RADIUS * RADIUS) {
+                        if (dx * dx + dy * dy <= radius * radius) {
                             map[y][x].value = true;
                             map[y][x].color = HSLtoRGB(std::fmod(time + (x + y) * 20.0f, 360.0f), 0.6f, 0.5f);
                         }
@@ -133,6 +130,102 @@ void place_sand(const sf::RenderWindow& window, map_t& map, sf::Vector2f offset,
         }
     }
 }
+
+
+class Slider {
+    sf::RectangleShape slider_frame;
+    sf::RectangleShape slider;
+    int slider_value;
+    int max_slider_value;
+    int min_slider_value;
+
+    sf::Text slider_label;
+    float SLIDER_VALUE_LABEL_Y_OFFSET = 0.5;
+    sf::Text slider_value_label;
+
+    bool is_mouse_inside(sf::Vector2i mousePos) const {
+        return (mousePos.x > slider_frame.getPosition().x &&
+                mousePos.x < slider_frame.getPosition().x + slider_frame.getSize().x &&
+                mousePos.y > slider_frame.getPosition().y &&
+                mousePos.y < slider_frame.getPosition().y + slider_frame.getSize().y);
+    }
+
+
+    public:
+
+    Slider(const sf::Vector2f position, const sf::Vector2f size, int min_value, int max_value, const sf::Font& font):
+    slider_label(font), slider_value_label(font) {
+        slider_frame.setSize(size);
+        slider_frame.setPosition(sf::Vector2f(position.x, position.y));
+        slider_frame.setFillColor(sf::Color::Black);
+        slider_frame.setOutlineColor(sf::Color::White);
+        slider_frame.setOutlineThickness(1);
+
+
+        this->min_slider_value = min_value;
+        this->max_slider_value = max_value;
+        this->slider_value = 0;
+
+        slider.setSize(sf::Vector2f(0, size.y));
+
+        slider.setPosition(sf::Vector2f(position.x, position.y));
+
+        slider.setFillColor(SAND_COLOR);
+
+        slider_label = sf::Text(font, "", 8);
+        slider_label.setFillColor(sf::Color::White);
+        slider_label.setPosition(sf::Vector2f(position.x, position.y - slider_frame.getSize().y / 4));
+
+        slider_value_label = sf::Text(font, std::to_string(this->slider_value+1), 8);
+        slider_value_label.setFillColor(sf::Color::White);
+        slider_value_label.setPosition(sf::Vector2f(position.x, position.y + SLIDER_VALUE_LABEL_Y_OFFSET * size.y));
+
+    }
+
+
+    void set_slider_color(sf::Color new_color) {
+        slider.setFillColor(new_color);
+    }
+
+
+    void draw(sf::RenderWindow& window) {
+        window.draw(slider_frame);
+
+        float percent = static_cast<float>(slider_value - min_slider_value) / (max_slider_value - min_slider_value);
+        float slider_width = percent * slider_frame.getSize().x;
+
+        slider.setSize(sf::Vector2f(slider_width, slider_frame.getSize().y));
+
+        window.draw(slider);
+
+        window.draw(this->slider_label);
+
+        window.draw(this->slider_value_label);
+    }
+
+    void logic(sf::RenderWindow& window){
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+        if (is_mouse_inside(mousePos) && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            float rel_x = mousePos.x - slider_frame.getPosition().x;
+            float percent = rel_x / slider_frame.getSize().x;
+            percent = std::clamp(percent, 0.0f, 1.0f);
+            slider_value = static_cast<int>(min_slider_value + percent * (max_slider_value - min_slider_value));
+            slider_value_label.setString(std::to_string(slider_value+1));
+        }
+    }
+
+    int get_slider_value() const {
+        return slider_value;
+    }
+
+    void set_text(const std::string& text) {
+        this->slider_label.setString(text);
+    }
+
+};
+
+
 
 int main() {
 
@@ -148,6 +241,17 @@ int main() {
 
     float time = 0.0f;
 
+    auto pixel_font = sf::Font();
+    if (!pixel_font.openFromFile("assets/fonts/Pixel-Regular.ttf")) {
+        std::cerr << "Failed to load font." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+
+    Slider slider = Slider(sf::Vector2f(10,10),sf::Vector2f(100,25),0,20, pixel_font);
+    slider.set_text("Brush Size");
+
+
     while (window.isOpen()) {
 
         while (const std::optional event = window.pollEvent()){
@@ -155,15 +259,20 @@ int main() {
                 window.close();
             }
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-                place_sand(window, map,draw_map_offset, time);
+                place_sand(window, map,draw_map_offset, time, slider.get_slider_value());
                 }
+            slider.logic(window);
             }
+
+
 
         window.clear();
 
         apply_physics(map);
 
         draw_map(window, draw_map_offset,map, width, height);
+
+        slider.draw(window);
 
         window.display();
         time += 0.001f;

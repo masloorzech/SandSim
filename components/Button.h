@@ -7,6 +7,8 @@
 
 
 #include <SFML/Graphics.hpp>
+#include <functional>
+
 
 class Button{
     protected:
@@ -23,7 +25,7 @@ class Button{
 
     public:
 
-      Button(sf::Vector2f position, sf::Vector2f size, sf::Color color, sf::Font& font);
+      Button(sf::Vector2f position, sf::Vector2f size, sf::Color color, const sf::Font& font);
       virtual ~Button() = default;
 
       void draw(sf::RenderWindow &window);
@@ -34,7 +36,7 @@ class Button{
 
       void set_new_button_hover_color(sf::Color new_color);
 
-      bool mouse_in_bounds(sf::RenderWindow &window);
+      bool mouse_in_bounds(const sf::RenderWindow &window) const;
 
       void set_text(const std::string& text);
 
@@ -42,19 +44,25 @@ class Button{
 };
 
 class MomentaryButton : public Button{
+    long press_count;
+    long last_pressed_count;
     public:
       using Button::Button;
-      void logic(sf::RenderWindow &window);
+      void logic(sf::RenderWindow &window) override;
+    bool pressed();
 };
 
 class LatchingButton : public Button{
-  private:
     bool wasPressed = false;
 
     bool latched = false;
+
   public:
+
     using Button::Button;
-    void logic(sf::RenderWindow &window);
+    void logic(sf::RenderWindow &window) override;
+    bool get_state() const;
+    void change_state(bool state);
 };
 
 

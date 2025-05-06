@@ -4,12 +4,16 @@
 #include <vector>
 #include <filesystem>
 #include <cmath>
+#include <vector>
 
 #include "components/Slider.h"
 #include "components/Button.h"
 #include "utils/color_utils.h"
 
-#define PIXEL_SIZE 3
+
+#define PIXEL_SIZE 2
+
+#define IMG_FOLDER "screenshots"
 
 enum TILE_TYPE {
     AIR =0,
@@ -155,6 +159,28 @@ std::vector<Slider> init_color_sliders(int x, int y, int x_spcacing,int y_spacin
     return brush_color_sliders;
 }
 
+bool mouse_in_bounds(sf::RectangleShape bounds, const sf::RenderWindow& window){
+    sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
+    return bounds.getGlobalBounds().contains(static_cast<sf::Vector2f>(mouse_pos));
+}
+
+bool save_map_as_image(const map_t& map, const std::string& filename) {
+    if (map.empty() || map[0].empty()) return false;
+
+    size_t height = map.size();
+    size_t width = map[0].size();
+
+    sf::Image image(sf::Vector2u(width,height),sf::Color::Black);
+
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < width; ++x) {
+            image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+        }
+    }
+
+    return image.saveToFile(filename);
+}
+
 int main() {
 
     sf::Vector2f window_size = sf::Vector2f(1280,840);
@@ -173,6 +199,9 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    sf::RectangleShape map_rect = sf::RectangleShape(sf::Vector2f(width * PIXEL_SIZE, height * PIXEL_SIZE));
+    map_rect.setPosition(draw_map_offset);
+
 
     Slider slider = Slider(sf::Vector2f(10,10),sf::Vector2f(100,25),0,20, pixel_font);
     slider.set_text("Brush Size");
@@ -189,33 +218,95 @@ int main() {
     color_preview.setOutlineThickness(1);
     color_preview.setPosition(sf::Vector2f(10,75));
 
-    LatchingButton test_button = LatchingButton(sf::Vector2f(300,0), sf::Vector2f(50,50), sf::Color::Magenta, pixel_font);
-    test_button.set_new_button_hover_color(sf::Color(255,255,255,155));
-    test_button.set_new_button_nonpressed_color(sf::Color::Green);
+    LatchingButton solid_button = LatchingButton(sf::Vector2f(10,350), sf::Vector2f(25,25), sf::Color::Black, pixel_font);
+    solid_button.set_new_button_hover_color(sf::Color(0, 102, 51));
+    solid_button.set_new_button_pressed_color(sf::Color(0, 66, 33));
+    solid_button.set_text("Solid");
+
+    LatchingButton colorful_button = LatchingButton(sf::Vector2f(10,400), sf::Vector2f(25,25), sf::Color::Black, pixel_font);
+    colorful_button.set_new_button_hover_color(sf::Color(0, 102, 51));
+    colorful_button.set_new_button_pressed_color(sf::Color(0, 66, 33));
+    colorful_button.set_text("Color");
+
+    MomentaryButton reset_button = MomentaryButton(sf::Vector2f(10,500), sf::Vector2f(25,25), sf::Color::Black, pixel_font);
+    reset_button.set_new_button_hover_color(sf::Color(0, 102, 51));
+    reset_button.set_new_button_pressed_color(sf::Color(0, 66, 33));
+    reset_button.set_text("Reset");
+
+    auto element = SAND;
+
+    std::filesystem::create_directories(IMG_FOLDER);
 
     while (window.isOpen()) {
 
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
+            }else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+                if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
+                    window.close();
+                }
+                if (keyPressed->scancode == sf::Keyboard::Scancode::F2) {
+                    std::time_t now = std::time(nullptr);
+                    std::tm* tm_ptr = std::localtime(&now);
+
+                    std::ostringstream ss;
+                    ss<<IMG_FOLDER<< "/screen_"
+                       << std::put_time(tm_ptr, "%Y-%m-%d_%H-%M-%S")
+                       << ".png";
+
+                    save_map_as_image(map,ss.str());
+                }
             }
 
+            colorful_button.logic(window);
             slider.logic(window);
 
             for (auto& brush_color_slider : brush_color_sliders) {
                 brush_color_slider.logic(window);
             }
+
+            if (colorful_button.get_state() && mouse_in_bounds(map_rect, window) && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+                brush_color_sliders[0].set_slider_value((brush_color_sliders[0].get_slider_value()+1)%255);
+                brush_color_sliders[1].set_slider_value((brush_color_sliders[1].get_slider_value()+1)%255);
+                brush_color_sliders[2].set_slider_value((brush_color_sliders[2].get_slider_value()+1)%255);
+            }
+
             auto color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(), brush_color_sliders[2].get_slider_value());
+
+            brush_color_sliders[0].set_slider_color(sf::Color(brush_color_sliders[0].get_slider_value(),0,0));
+            brush_color_sliders[1].set_slider_color(sf::Color(0,brush_color_sliders[1].get_slider_value(),0));
+            brush_color_sliders[2].set_slider_color(sf::Color(0,0,brush_color_sliders[2].get_slider_value()));
+
+
+            solid_button.logic(window);
+
+            if (solid_button.get_state()) {
+                element = SOLID;
+            }else {
+                element = SAND;
+            }
 
             color_preview.setFillColor(color);
 
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, SAND);
+                use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, element);
             }
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
                 use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, AIR);
             }
-            test_button.logic(window);
+            reset_button.logic(window);
+            if (reset_button.pressed()) {
+                for (auto& row: map) {
+                    for (auto& col: row) {
+                        col.color = sf::Color::Black;
+                        col.value = AIR;
+                    }
+                }
+                brush_color_sliders[0].set_slider_value(127);
+                brush_color_sliders[1].set_slider_value(127);
+                brush_color_sliders[2].set_slider_value(127);
+            }
         }
 
         window.clear();
@@ -229,9 +320,10 @@ int main() {
         for (auto& brush_color_slider : brush_color_sliders) {
             brush_color_slider.draw(window);
         }
+        reset_button.draw(window);
 
-        test_button.draw(window);
-
+        solid_button.draw(window);
+        colorful_button.draw(window);
         window.draw(color_preview);
 
         window.display();

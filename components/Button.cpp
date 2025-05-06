@@ -4,6 +4,8 @@
 
 #include "Button.h"
 
+#include <cmath>
+
 Button::Button(const sf::Vector2f position, const sf::Vector2f size, const sf::Color color, const sf::Font& font):
 label(font){
     button.setPosition(position);
@@ -18,8 +20,7 @@ label(font){
 
     label.setFont(font);
     label.setCharacterSize(8);
-
-    label.setPosition((sf::Vector2f(position.x, position.y - button.getSize().y / 4)));
+    label.setFillColor(sf::Color::White);
 
     dirty= true;
 }
@@ -58,6 +59,17 @@ bool Button::mouse_in_bounds(const sf::RenderWindow& window) const {
 
 void Button::set_text(const std::string& text) {
     label.setString(text);
+
+    sf::FloatRect bounds = label.getLocalBounds();
+
+    label.setOrigin(sf::Vector2f(
+        std::round(bounds.position.x + bounds.size.x / 2.f),
+        std::round(bounds.position.y + bounds.size.y / 2.f)));
+
+    label.setPosition(sf::Vector2f(
+        std::round(button.getPosition().x + (button.getSize().x / 2.f)),
+        std::round(button.getPosition().y + (button.getSize().y / 2.f))));
+
     dirty = true;
 }
 

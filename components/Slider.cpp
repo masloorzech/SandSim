@@ -3,6 +3,8 @@
 //
 #include "Slider.h"
 
+#include <cmath>
+
 
 bool Slider::is_mouse_inside(sf::Vector2i mousePos) const {
 return (mousePos.x > slider_frame.getPosition().x &&
@@ -30,9 +32,10 @@ slider_label(font), slider_value_label(font) {
 
     slider.setFillColor(sf::Color::Red);
 
-    slider_label = sf::Text(font, "", 8);
+    slider_label = sf::Text(font, "", 10);
     slider_label.setFillColor(sf::Color::White);
-    slider_label.setPosition(sf::Vector2f(position.x, position.y - slider_frame.getSize().y / 4));
+    slider_label.setPosition(sf::Vector2f(std::round(position.x),
+    std::round(position.y - slider_frame.getSize().y / 4)));
 
     slider_value_label = sf::Text(font, std::to_string(this->slider_value+1), 8);
     slider_value_label.setFillColor(sf::Color::White);

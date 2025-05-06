@@ -188,28 +188,30 @@ bool mouse_in_bounds(const sf::RectangleShape& bounds, const sf::RenderWindow &w
 bool save_map_as_image(const map_t &map, const std::string &filename) {
     if (map.empty() || map[0].empty()) return false;
 
-    size_t height = map.size();
-    size_t width = map[0].size();
+    const size_t height = map.size();
+    const size_t width = map[0].size();
 
     sf::Image image(sf::Vector2u(width, height), sf::Color::Black);
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+            if (map[y][x].value == SAND) {
+                image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+            }
         }
     }
 
     return image.saveToFile(filename);
 }
 
-sf::RenderWindow init_screen(sf::Vector2f window_size) {
+sf::RenderWindow init_screen(const sf::Vector2f window_size) {
     sf::RenderWindow window(sf::VideoMode({
                                 static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)
                             }), "SandSim");
     return window;
 }
 
-map_t init_map(sf::Vector2u map_size) {
+map_t init_map(const sf::Vector2u map_size) {
     map_t map(map_size.x, std::vector<tile>(map_size.y));
 
     for (unsigned int x = 0; x < map_size.x; ++x) {
@@ -273,6 +275,58 @@ MomentaryButton init_momentary_button(const std::string &text, const sf::Vector2
     return button;
 }
 
+void handle_reset_button(const bool state, map_t& map, std::vector<Slider>& brush_color_sliders) {
+    if (state) {
+        for (auto &row: map) {
+            for (auto &col: row) {
+                col.color = sf::Color::Black;
+                col.value = AIR;
+            }
+        }
+        for (auto &brush_color_slider: brush_color_sliders) {
+            brush_color_slider.set_slider_value(127);
+        }
+    }
+}
+
+void handle_solid_button(const bool state, TILE_TYPE& element) {
+    if (state) {
+        element = SOLID;
+    } else {
+        element = SAND;
+    }
+}
+
+void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
+    brush_color_sliders[0].set_slider_color(sf::Color(brush_color_sliders[0].get_slider_value(), 0, 0, 255));
+    brush_color_sliders[1].set_slider_color(sf::Color(0, brush_color_sliders[1].get_slider_value(), 0, 255));
+    brush_color_sliders[2].set_slider_color(sf::Color(0, 0, brush_color_sliders[2].get_slider_value(), 255));
+    brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(), 255));
+}
+
+sf::Color get_color_from_sliders(const std::vector<Slider>& brush_color_sliders) {
+    return sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(),brush_color_sliders[2].get_slider_value(),brush_color_sliders[3].get_slider_value());
+}
+
+bool left_mouse_button_pressed() {
+    return sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+}
+bool right_mouse_button_pressed() {
+    return sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
+}
+
+std::string generate_filename() {
+
+    const std::time_t now = std::time(nullptr);
+    const std::tm *tm_ptr = std::localtime(&now);
+
+    std::ostringstream ss;
+    ss << IMG_FOLDER << "/screen_"
+            << std::put_time(tm_ptr, "%Y-%m-%d_%H-%M-%S")
+            << ".png";
+
+    return ss.str();
+}
 
 int main() {
     std::filesystem::create_directories(IMG_FOLDER);
@@ -319,15 +373,7 @@ int main() {
                     window.close();
                 }
                 if (keyPressed->scancode == sf::Keyboard::Scancode::F2) {
-                    std::time_t now = std::time(nullptr);
-                    std::tm *tm_ptr = std::localtime(&now);
-
-                    std::ostringstream ss;
-                    ss << IMG_FOLDER << "/screen_"
-                            << std::put_time(tm_ptr, "%Y-%m-%d_%H-%M-%S")
-                            << ".png";
-
-                    save_map_as_image(map, ss.str());
+                    save_map_as_image(map, generate_filename());
                 }
             }
 
@@ -338,73 +384,53 @@ int main() {
                 brush_color_slider.logic(window);
             }
 
-            if (colorful_button.get_state() && mouse_in_bounds(window_map_bounds, window) && sf::Mouse::isButtonPressed(
-                    sf::Mouse::Button::Left)) {
+            if (colorful_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
                 for (size_t i = 0; i < brush_color_sliders.size() - 1; ++i) {
                     brush_color_sliders[i].set_slider_value((brush_color_sliders[i].get_slider_value() + 1) % 255);
                 }
             }
 
-            auto color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(),
-                                   brush_color_sliders[2].get_slider_value(),
-                                   brush_color_sliders[3].get_slider_value());
+            auto color = get_color_from_sliders(brush_color_sliders);
 
-            brush_color_sliders[0].set_slider_color(sf::Color(brush_color_sliders[0].get_slider_value(), 0, 0, 255));
-            brush_color_sliders[1].set_slider_color(sf::Color(0, brush_color_sliders[1].get_slider_value(), 0, 255));
-            brush_color_sliders[2].set_slider_color(sf::Color(0, 0, brush_color_sliders[2].get_slider_value(), 255));
-            brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),
-                                                              brush_color_sliders[3].get_slider_value(),
-                                                              brush_color_sliders[3].get_slider_value(), 255));
-
+            update_sliders_colors(brush_color_sliders);
 
             solid_button.logic(window);
-
-            if (solid_button.get_state()) {
-                element = SOLID;
-            } else {
-                element = SAND;
-            }
+            handle_solid_button(solid_button.get_state(), element);
 
             color_preview_screen.setFillColor(color);
 
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            if (left_mouse_button_pressed()) {
                 use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, element);
             }
-            if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
+            if (right_mouse_button_pressed()) {
                 use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, AIR);
             }
+
             reset_button.logic(window);
-            if (reset_button.pressed()) {
-                for (auto &row: map) {
-                    for (auto &col: row) {
-                        col.color = sf::Color::Black;
-                        col.value = AIR;
-                    }
-                }
-                for (auto &brush_color_slider: brush_color_sliders) {
-                    brush_color_slider.set_slider_value(127);
-                }
-            }
+            handle_reset_button(reset_button.pressed(), map, brush_color_sliders);
+
         }
 
-        window.clear();
-
+        //Physics part
         apply_physics(map);
 
-        draw_map(window, draw_map_offset, map, map_size.x, map_size.y);
+        //Drawing part
+        window.clear();
 
+        draw_map(window, draw_map_offset, map, map_size.x, map_size.y);
         brush_size_slider.draw(window);
 
         for (auto &brush_color_slider: brush_color_sliders) {
             brush_color_slider.draw(window);
         }
-        reset_button.draw(window);
 
+        reset_button.draw(window);
         solid_button.draw(window);
         colorful_button.draw(window);
         window.draw(color_preview_screen);
 
         window.display();
+
     }
 
 

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <vector>
@@ -13,29 +12,28 @@
 #define SLIDERS_HEIGHT 30
 #define SLIDERS_X_OFFSET 10
 
-#define PIXEL_SIZE 3
+#define PIXEL_SIZE 1
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 840
 
-#define MAP_WIDTH 256
-#define MAP_HEIGHT 256
+#define MAP_WIDTH 800
+#define MAP_HEIGHT 800
 
 #define IMG_FOLDER "screenshots"
 
-enum TILE_TYPE {
+enum class TileType {
     AIR = 0,
     SAND = 1,
     SOLID = 2
 };
 
 struct tile {
-    TILE_TYPE value = AIR;
+    TileType value = TileType::AIR;
     sf::Color color = sf::Color::Black;
 };
 
-typedef std::vector<std::vector<tile> > map_t;
-
+using map_t = std::vector<std::vector<tile>>;
 
 std::minstd_rand fast_rng(std::random_device{}());
 
@@ -49,7 +47,7 @@ map_t init_map(const sf::Vector2u map_size) {
 
     for (unsigned int x = 0; x < map_size.x; ++x) {
         for (unsigned int y = 0; y < map_size.y; ++y) {
-            map[x][y].value = TILE_TYPE::AIR;
+            map[x][y].value = TileType::AIR;
             map[x][y].color = sf::Color::Black;
         }
     }
@@ -105,7 +103,7 @@ bool save_map_as_image(const map_t &map, const std::string &filename) {
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            if (map[y][x].value == SAND) {
+            if (map[y][x].value == TileType::SAND) {
                 image.setPixel(sf::Vector2u(x, y), map[y][x].color);
             }
         }
@@ -142,7 +140,8 @@ sf::RectangleShape init_preview_screen(sf::Vector2f position, sf::Vector2f size,
 }
 
 Slider init_brush_size_slider(const sf::Vector2f position, const sf::Font &font) {
-    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 20, font);
+
+    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 32, font);
     slider.set_text("Brush Size");
     slider.set_slider_color(sf::Color(0, 102, 51));
     slider.set_slider_value(10);
@@ -183,7 +182,7 @@ void handle_reset_button(const bool state, map_t& map, std::vector<Slider>& brus
         for (auto &row: map) {
             for (auto &col: row) {
                 col.color = sf::Color::Black;
-                col.value = AIR;
+                col.value = TileType::AIR;
             }
         }
         for (auto &brush_color_slider: brush_color_sliders) {
@@ -192,11 +191,11 @@ void handle_reset_button(const bool state, map_t& map, std::vector<Slider>& brus
     }
 }
 
-void handle_solid_button(const bool state, TILE_TYPE& element) {
+void handle_solid_button(const bool state, TileType& element) {
     if (state) {
-        element = SOLID;
+        element = TileType::SOLID;
     } else {
-        element = SAND;
+        element = TileType::SAND;
     }
 }
 
@@ -221,7 +220,7 @@ void draw_map(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
             const size_t index = (y * width + x) * 6;
-            const sf::Color color = map[y][x].value != AIR ? map[y][x].color : sf::Color::Black;
+            const sf::Color color = map[y][x].value != TileType::AIR ? map[y][x].color : sf::Color::Black;
 
             const float xPos = offset.x + static_cast<float>(x * PIXEL_SIZE);
             const float yPos = offset.y + static_cast<float>(y * PIXEL_SIZE);
@@ -247,25 +246,54 @@ void draw_map(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &
     window.draw(vertices);
 }
 
+void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
+    sf::Image image(sf::Vector2u(width, height), sf::Color::Black);
+
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < width; ++x) {
+            if (map[y][x].value != TileType::AIR) {
+                image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+            }
+        }
+    }
+
+    sf::Texture texture;
+    texture.loadFromImage(image);
+
+    sf::Sprite sprite(texture);
+    sprite.setScale(sf::Vector2f(static_cast<float>(PIXEL_SIZE), static_cast<float>(PIXEL_SIZE)));
+    sprite.setPosition(offset);
+
+    sf::RectangleShape frame(sf::Vector2f(static_cast<float>(width) * PIXEL_SIZE, static_cast<float>(height) * PIXEL_SIZE));
+    frame.setOutlineThickness(PIXEL_SIZE);
+    frame.setOutlineColor(sf::Color::White);
+    frame.setFillColor(sf::Color::Transparent);
+    frame.setPosition(offset);
+
+    window.draw(sprite);
+    window.draw(frame);
+}
+
 void try_move_tile(map_t &map, const int x, const int y, const int new_x, const int new_y) {
-    if (new_x >= 0 && new_x < map[0].size() && new_y >= 0 && new_y < map.size() && map[new_y][new_x].value == AIR) {
+    if (new_x >= 0 && new_x < map[0].size() && new_y >= 0 && new_y < map.size() && map[new_y][new_x].value == TileType::AIR) {
         map[new_y][new_x] = map[y][x];
-        map[y][x].value = AIR;
+        map[y][x].value = TileType::AIR;
     }
 }
 
 void apply_physics(map_t &map) {
     const int width = static_cast<int>(map.size() - 2);
     const int height = static_cast<int>(map[0].size());
+
     for (int y = width; y >= 0; --y) {
         for (int x = 0; x <height; ++x) {
-            if (map[y][x].value == SAND) {
-                try_move_tile(map, x, y, x, y + 1);
+            if (map[y][x].value == TileType::SAND) {
+                try_move_tile(map, x, y, x, y +1);
 
                 if (fast_rng() % 100 < 50) {
-                    try_move_tile(map, x, y, x + 1, y + 1);
+                    try_move_tile(map, x, y, x + 1, y+1);
                 } else {
-                    try_move_tile(map, x, y, x - 1, y + 1);
+                    try_move_tile(map, x, y, x - 1, y +1);
                 }
 
             }
@@ -273,7 +301,7 @@ void apply_physics(map_t &map) {
     }
 }
 
-void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f offset, const int radius, const sf::Color color, const TILE_TYPE draw_with) {
+void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f offset, const int radius, const sf::Color color, const TileType draw_with) {
     const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     const int grid_x = (mousePos.x - static_cast<int>(offset.x)) / PIXEL_SIZE;
     const int grid_y = (mousePos.y - static_cast<int>(offset.y)) / PIXEL_SIZE;
@@ -292,20 +320,20 @@ void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f of
 
 
             switch (draw_with) {
-                case SAND:
-                    if (t.value != SAND && t.value != SOLID) {
+                case TileType::SAND:
+                    if (t.value != TileType::SAND && t.value != TileType::SOLID) {
                         t.value = draw_with;
                         t.color = color;
                     }
                     break;
-                case AIR:
-                    if (t.value == SAND || t.value == SOLID) {
+                case TileType::AIR:
+                    if (t.value == TileType::SAND || t.value == TileType::SOLID) {
                         t.value = draw_with;
                         t.color = color;
                     }
                     break;
-                case SOLID:
-                    if (t.value == AIR) {
+                case TileType::SOLID:
+                    if (t.value == TileType::AIR) {
                         t.value = draw_with;
                         t.color = color;
                     }
@@ -362,7 +390,7 @@ int main() {
 
     auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 600), pixel_font);
 
-    TILE_TYPE element;
+    TileType element;
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -403,7 +431,7 @@ int main() {
                 use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, element);
             }
             if (right_mouse_button_pressed()) {
-                use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, AIR);
+                use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, TileType::AIR);
             }
 
             reset_button.logic(window);
@@ -417,7 +445,7 @@ int main() {
         //Drawing part
         window.clear();
 
-        draw_map(window, draw_map_offset, map, map_size.x, map_size.y);
+        draw_map_as_sprite(window, draw_map_offset, map, map_size.x, map_size.y);
         brush_size_slider.draw(window);
 
         for (auto &brush_color_slider: brush_color_sliders) {

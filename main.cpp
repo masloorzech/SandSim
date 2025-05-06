@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "components/Slider.h"
+#include "components/Button.h"
 #include "utils/color_utils.h"
 
 #define PIXEL_SIZE 3
@@ -188,6 +189,9 @@ int main() {
     color_preview.setOutlineThickness(1);
     color_preview.setPosition(sf::Vector2f(10,75));
 
+    LatchingButton test_button = LatchingButton(sf::Vector2f(300,0), sf::Vector2f(50,50), sf::Color::Magenta, pixel_font);
+    test_button.set_new_button_hover_color(sf::Color(255,255,255,155));
+    test_button.set_new_button_nonpressed_color(sf::Color::Green);
 
     while (window.isOpen()) {
 
@@ -211,6 +215,7 @@ int main() {
             if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
                 use_brush(window, map,draw_map_offset, slider.get_slider_value(),color, AIR);
             }
+            test_button.logic(window);
         }
 
         window.clear();
@@ -224,6 +229,8 @@ int main() {
         for (auto& brush_color_slider : brush_color_sliders) {
             brush_color_slider.draw(window);
         }
+
+        test_button.draw(window);
 
         window.draw(color_preview);
 

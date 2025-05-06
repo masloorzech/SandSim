@@ -23,7 +23,7 @@ private:
     bool is_mouse_inside(sf::Vector2i mousePos) const;
 
 public:
-    Slider(const sf::Vector2f position, const sf::Vector2f size, int min_value, int max_value, const sf::Font& font);
+    Slider(sf::Vector2f position, sf::Vector2f size, int min_value, int max_value, const sf::Font& font);
 
     void set_slider_color(sf::Color new_color);
 

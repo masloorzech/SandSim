@@ -141,7 +141,7 @@ sf::RectangleShape init_preview_screen(sf::Vector2f position, sf::Vector2f size,
 
 Slider init_brush_size_slider(const sf::Vector2f position, const sf::Font &font) {
 
-    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 32, font);
+    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 64, font);
     slider.set_text("Brush Size");
     slider.set_slider_color(sf::Color(0, 102, 51));
     slider.set_slider_value(10);
@@ -199,51 +199,23 @@ void handle_solid_button(const bool state, TileType& element) {
     }
 }
 
+void handle_unsolidify_button(const bool state, map_t& map) {
+    if (state) {
+        for (auto &row: map) {
+            for (auto &col: row) {
+                if (col.value == TileType::SOLID) {
+                    col.value = TileType::SAND;
+                }
+            }
+        }
+    }
+}
+
 void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
     brush_color_sliders[0].set_slider_color(sf::Color(brush_color_sliders[0].get_slider_value(), 0, 0, 255));
     brush_color_sliders[1].set_slider_color(sf::Color(0, brush_color_sliders[1].get_slider_value(), 0, 255));
     brush_color_sliders[2].set_slider_color(sf::Color(0, 0, brush_color_sliders[2].get_slider_value(), 255));
     brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(), 255));
-}
-
-void draw_map(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
-    sf::RectangleShape frame(sf::Vector2f(static_cast<float>(width) * PIXEL_SIZE, static_cast<float>(height) * PIXEL_SIZE));
-    frame.setOutlineThickness(PIXEL_SIZE);
-    frame.setOutlineColor(sf::Color::White);
-    frame.setFillColor(sf::Color::Transparent);
-    frame.setPosition(sf::Vector2f(offset.x, offset.y));
-
-    window.draw(frame);
-
-    sf::VertexArray vertices(sf::PrimitiveType::Triangles, width * height * 6);
-
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < width; x++) {
-            const size_t index = (y * width + x) * 6;
-            const sf::Color color = map[y][x].value != TileType::AIR ? map[y][x].color : sf::Color::Black;
-
-            const float xPos = offset.x + static_cast<float>(x * PIXEL_SIZE);
-            const float yPos = offset.y + static_cast<float>(y * PIXEL_SIZE);
-
-            vertices[index].position = sf::Vector2f(xPos, yPos);
-            vertices[index + 1].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos);
-            vertices[index + 2].position = sf::Vector2f(xPos, yPos + PIXEL_SIZE);
-
-            vertices[index].color = color;
-            vertices[index + 1].color = color;
-            vertices[index + 2].color = color;
-
-            vertices[index + 3].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos);
-            vertices[index + 4].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos + PIXEL_SIZE);
-            vertices[index + 5].position = sf::Vector2f(xPos, yPos + PIXEL_SIZE);
-
-            vertices[index + 3].color = color;
-            vertices[index + 4].color = color;
-            vertices[index + 5].color = color;
-        }
-    }
-
-    window.draw(vertices);
 }
 
 void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
@@ -388,7 +360,9 @@ int main() {
 
     auto colorful_button = init_latching_button("Colorful", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 450),pixel_font);
 
-    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 600), pixel_font);
+    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 550), pixel_font);
+
+    auto unsolidify_button = init_momentary_button("Force", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 550), pixel_font);
 
     TileType element;
 
@@ -437,6 +411,9 @@ int main() {
             reset_button.logic(window);
             handle_reset_button(reset_button.pressed(), map, brush_color_sliders);
 
+            unsolidify_button.logic(window);
+            handle_unsolidify_button(unsolidify_button.pressed(),map);
+
         }
 
         //Physics part
@@ -451,7 +428,7 @@ int main() {
         for (auto &brush_color_slider: brush_color_sliders) {
             brush_color_slider.draw(window);
         }
-
+        unsolidify_button.draw(window);
         reset_button.draw(window);
         solid_button.draw(window);
         colorful_button.draw(window);

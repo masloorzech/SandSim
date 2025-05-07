@@ -206,46 +206,6 @@ void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
     brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(), 255));
 }
 
-void draw_map(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
-    sf::RectangleShape frame(sf::Vector2f(static_cast<float>(width) * PIXEL_SIZE, static_cast<float>(height) * PIXEL_SIZE));
-    frame.setOutlineThickness(PIXEL_SIZE);
-    frame.setOutlineColor(sf::Color::White);
-    frame.setFillColor(sf::Color::Transparent);
-    frame.setPosition(sf::Vector2f(offset.x, offset.y));
-
-    window.draw(frame);
-
-    sf::VertexArray vertices(sf::PrimitiveType::Triangles, width * height * 6);
-
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < width; x++) {
-            const size_t index = (y * width + x) * 6;
-            const sf::Color color = map[y][x].value != TileType::AIR ? map[y][x].color : sf::Color::Black;
-
-            const float xPos = offset.x + static_cast<float>(x * PIXEL_SIZE);
-            const float yPos = offset.y + static_cast<float>(y * PIXEL_SIZE);
-
-            vertices[index].position = sf::Vector2f(xPos, yPos);
-            vertices[index + 1].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos);
-            vertices[index + 2].position = sf::Vector2f(xPos, yPos + PIXEL_SIZE);
-
-            vertices[index].color = color;
-            vertices[index + 1].color = color;
-            vertices[index + 2].color = color;
-
-            vertices[index + 3].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos);
-            vertices[index + 4].position = sf::Vector2f(xPos + PIXEL_SIZE, yPos + PIXEL_SIZE);
-            vertices[index + 5].position = sf::Vector2f(xPos, yPos + PIXEL_SIZE);
-
-            vertices[index + 3].color = color;
-            vertices[index + 4].color = color;
-            vertices[index + 5].color = color;
-        }
-    }
-
-    window.draw(vertices);
-}
-
 void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
     sf::Image image(sf::Vector2u(width, height), sf::Color::Black);
 

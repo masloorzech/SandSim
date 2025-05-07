@@ -141,7 +141,7 @@ sf::RectangleShape init_preview_screen(sf::Vector2f position, sf::Vector2f size,
 
 Slider init_brush_size_slider(const sf::Vector2f position, const sf::Font &font) {
 
-    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 32, font);
+    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 64, font);
     slider.set_text("Brush Size");
     slider.set_slider_color(sf::Color(0, 102, 51));
     slider.set_slider_value(10);
@@ -196,6 +196,18 @@ void handle_solid_button(const bool state, TileType& element) {
         element = TileType::SOLID;
     } else {
         element = TileType::SAND;
+    }
+}
+
+void handle_unsolidify_button(const bool state, map_t& map) {
+    if (state) {
+        for (auto &row: map) {
+            for (auto &col: row) {
+                if (col.value == TileType::SOLID) {
+                    col.value = TileType::SAND;
+                }
+            }
+        }
     }
 }
 
@@ -348,7 +360,9 @@ int main() {
 
     auto colorful_button = init_latching_button("Colorful", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 450),pixel_font);
 
-    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 600), pixel_font);
+    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 550), pixel_font);
+
+    auto unsolidify_button = init_momentary_button("Force", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 550), pixel_font);
 
     TileType element;
 
@@ -397,6 +411,9 @@ int main() {
             reset_button.logic(window);
             handle_reset_button(reset_button.pressed(), map, brush_color_sliders);
 
+            unsolidify_button.logic(window);
+            handle_unsolidify_button(unsolidify_button.pressed(),map);
+
         }
 
         //Physics part
@@ -411,7 +428,7 @@ int main() {
         for (auto &brush_color_slider: brush_color_sliders) {
             brush_color_slider.draw(window);
         }
-
+        unsolidify_button.draw(window);
         reset_button.draw(window);
         solid_button.draw(window);
         colorful_button.draw(window);

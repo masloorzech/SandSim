@@ -12,13 +12,13 @@
 #define SLIDERS_HEIGHT 30
 #define SLIDERS_X_OFFSET 10
 
-#define PIXEL_SIZE 1
+#define PIXEL_SIZE 3
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 840
 
-#define MAP_WIDTH 800
-#define MAP_HEIGHT 800
+#define MAP_WIDTH 256
+#define MAP_HEIGHT 256
 
 #define IMG_FOLDER "screenshots"
 
@@ -199,12 +199,25 @@ void handle_solid_button(const bool state, TileType& element) {
     }
 }
 
+
 void handle_unsolidify_button(const bool state, map_t& map) {
     if (state) {
         for (auto &row: map) {
             for (auto &col: row) {
                 if (col.value == TileType::SOLID) {
                     col.value = TileType::SAND;
+                }
+            }
+        }
+    }
+}
+
+void handle_solidify_button(const bool state, map_t& map) {
+    if (state) {
+        for (auto &row: map) {
+            for (auto &col: row) {
+                if (col.value == TileType::SAND) {
+                    col.value = TileType::SOLID;
                 }
             }
         }
@@ -362,7 +375,9 @@ int main() {
 
     auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 550), pixel_font);
 
-    auto unsolidify_button = init_momentary_button("Force", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 550), pixel_font);
+    auto unsolidify_button = init_momentary_button("Unsolidify", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 500), pixel_font);
+
+    auto solidify_button = init_momentary_button("Solidify", sf::Vector2f(SLIDERS_X_OFFSET, 500), pixel_font);
 
     TileType element;
 
@@ -414,6 +429,8 @@ int main() {
             unsolidify_button.logic(window);
             handle_unsolidify_button(unsolidify_button.pressed(),map);
 
+            solidify_button.logic(window);
+            handle_solidify_button(solidify_button.pressed(),map);
         }
 
         //Physics part
@@ -432,6 +449,7 @@ int main() {
         reset_button.draw(window);
         solid_button.draw(window);
         colorful_button.draw(window);
+        solidify_button.draw(window);
         window.draw(color_preview_screen);
 
         window.display();

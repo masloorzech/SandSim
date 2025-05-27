@@ -22,6 +22,8 @@
 
 #define IMG_FOLDER "screenshots"
 
+bool LEFT_MOUSE_BUTTON_STATE= false;
+
 enum class TileType {
     AIR = 0,
     SAND = 1,
@@ -366,6 +368,8 @@ int main() {
 
     TileType element;
 
+    auto color = get_color_from_sliders(brush_color_sliders);
+
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -386,14 +390,6 @@ int main() {
                 brush_color_slider.logic(window);
             }
 
-            if (colorful_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
-                for (size_t i = 0; i < brush_color_sliders.size() - 1; ++i) {
-                    brush_color_sliders[i].set_slider_value((brush_color_sliders[i].get_slider_value() + 1) % 255);
-                }
-            }
-
-            auto color = get_color_from_sliders(brush_color_sliders);
-
             update_sliders_colors(brush_color_sliders);
 
             solid_button.logic(window);
@@ -401,19 +397,27 @@ int main() {
 
             color_preview_screen.setFillColor(color);
 
-            if (left_mouse_button_pressed()) {
-                use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, element);
-            }
-            if (right_mouse_button_pressed()) {
-                use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, TileType::AIR);
-            }
-
             reset_button.logic(window);
             handle_reset_button(reset_button.pressed(), map, brush_color_sliders);
 
             unsolidify_button.logic(window);
             handle_unsolidify_button(unsolidify_button.pressed(),map);
 
+        }
+
+        if (colorful_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
+            for (size_t i = 0; i < brush_color_sliders.size() - 1; ++i) {
+                brush_color_sliders[i].set_slider_value((brush_color_sliders[i].get_slider_value() + 1) % 255);
+            }
+        }
+
+        color = get_color_from_sliders(brush_color_sliders);
+
+        if (left_mouse_button_pressed()) {
+            use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, element);
+        }
+        if (right_mouse_button_pressed()) {
+            use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, TileType::AIR);
         }
 
         //Physics part

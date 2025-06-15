@@ -400,6 +400,8 @@ int main() {
 
     auto color_preview_screen = init_preview_screen(sf::Vector2f(SLIDERS_X_OFFSET, 80),sf::Vector2f(SLIDERS_WIDTH, SLIDERS_WIDTH), start_color);
 
+    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 450), pixel_font);
+
     auto solid_button = init_latching_button("Solid", sf::Vector2f(SLIDERS_X_OFFSET, 450),sf::Vector2f(SLIDERS_WIDTH/2.0 - 5,SLIDERS_HEIGHT), pixel_font);
 
     auto R_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 250),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
@@ -407,8 +409,6 @@ int main() {
     auto G_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 300),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
 
     auto B_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 350),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
-
-    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 550), pixel_font);
 
     auto unsolidify_button = init_momentary_button("Unsolidify", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 500), pixel_font);
 

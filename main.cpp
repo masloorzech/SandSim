@@ -3,7 +3,10 @@
 #include <iostream>
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 #include <random>
+#include <Windows.h>
+
 
 #include "components/Button.h"
 #include "components/Slider.h"
@@ -39,8 +42,18 @@ using map_t = std::vector<std::vector<tile>>;
 
 std::minstd_rand fast_rng(std::random_device{}());
 
-sf::RenderWindow init_screen(const sf::Vector2f window_size) {
-    sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(window_size.x), static_cast<unsigned int>(window_size.y)}), "SandSim");
+sf::RenderWindow init_screen(const sf::Vector2u window_size) {
+    sf::VideoMode video_mode(window_size);
+    auto style = sf::Style::Titlebar | sf::Style::Close;
+    sf::RenderWindow window(video_mode, "SandSim", style);
+
+    sf::Image icon;
+    if (icon.loadFromFile("assets/icon/sandSim.png")) {
+        window.setIcon(icon);
+    } else {
+        std::cerr << "Cannot load icon form: " << std::endl;
+    }
+
     return window;
 }
 
@@ -56,23 +69,23 @@ map_t init_map(const sf::Vector2u map_size) {
     return map;
 }
 
-std::vector<Slider> init_color_sliders(const sf::Vector2f position, const int x_spacing, const int y_spacing, const sf::Font &font) {
+std::vector<Slider> init_color_sliders(const sf::Vector2f position, const int x_spacing, const int y_spacing, const sf::Font &font, const uint8_t sliders_start_value) {
     auto R_slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
     R_slider.set_text("Red Value");
     R_slider.set_slider_color(sf::Color::Red);
-    R_slider.set_slider_value(128);
+    R_slider.set_slider_value(sliders_start_value);
 
     auto G_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + y_spacing)),
                              sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
     G_slider.set_text("Green Value");
     G_slider.set_slider_color(sf::Color::Green);
-    G_slider.set_slider_value(128);
+    G_slider.set_slider_value(sliders_start_value);
 
     auto B_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 2 * y_spacing)),
                              sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
     B_slider.set_text("Blue Value");
     B_slider.set_slider_color(sf::Color::Blue);
-    B_slider.set_slider_value(128);
+    B_slider.set_slider_value(sliders_start_value);
 
     auto A_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 3 * y_spacing)),
                              sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
@@ -200,7 +213,6 @@ void handle_solid_button(const bool state, TileType& element) {
     }
 }
 
-
 void handle_unsolidify_button(const bool state, map_t& map) {
     if (state) {
         for (auto &row: map) {
@@ -244,6 +256,7 @@ void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, con
     }
 
     sf::Texture texture;
+
     texture.loadFromImage(image);
 
     sf::Sprite sprite(texture);
@@ -372,7 +385,6 @@ int main() {
     std::filesystem::create_directories(IMG_FOLDER);
 
     auto window_size = sf::Vector2f(SCREEN_WIDTH,SCREEN_HEIGHT);
-
     auto map_size = sf::Vector2u(MAP_WIDTH,MAP_HEIGHT);
 
     auto map = init_map(map_size);
@@ -387,12 +399,11 @@ int main() {
 
     auto brush_size_slider = init_brush_size_slider(sf::Vector2f(SLIDERS_X_OFFSET,static_cast<float>(static_cast<int>(draw_map_offset.y))),pixel_font);
 
-    auto brush_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,250),0, 50,pixel_font);
+    auto brush_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,250),0, 50,pixel_font,128);
 
-    auto background_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,600),0, 50,pixel_font);
+    auto background_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,600),0, 50,pixel_font, 0);
 
-
-    sf::RenderWindow window = init_screen(window_size);
+    sf::RenderWindow window = init_screen(sf::Vector2u(window_size));
 
     auto start_color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(),
                                  brush_color_sliders[2].get_slider_value(), brush_color_sliders[3].get_slider_value());
@@ -489,7 +500,6 @@ int main() {
 
         //Drawing part
         window.clear();
-
         background_color = get_color_from_sliders(background_color_sliders);
 
         draw_map_as_sprite(window, draw_map_offset, map, map_size.x, map_size.y, background_color);

@@ -460,8 +460,6 @@ int main() {
             solid_button.logic(window);
             handle_solid_button(solid_button.get_state(), element);
 
-            color_preview_screen.setFillColor(color);
-
             reset_button.logic(window);
             handle_reset_button(reset_button.pressed(), map, brush_color_sliders);
 
@@ -474,6 +472,9 @@ int main() {
             R_color_button.logic(window);
             G_color_button.logic(window);
             B_color_button.logic(window);
+
+            color_preview_screen.setFillColor(color);
+
         }
 
         if (R_color_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
@@ -487,6 +488,9 @@ int main() {
         }
 
         color = get_color_from_sliders(brush_color_sliders);
+
+        color_preview_screen.setFillColor(color);
+
 
         if (left_mouse_button_pressed()) {
             use_brush(window, map, draw_map_offset, brush_size_slider.get_slider_value(), color, element);

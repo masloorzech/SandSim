@@ -150,9 +150,8 @@ Slider init_brush_size_slider(const sf::Vector2f position, const sf::Font &font)
 
     return slider;
 }
-
-LatchingButton init_latching_button(const std::string& text, const sf::Vector2f position, const sf::Font &font) {
-    auto button = LatchingButton(position, sf::Vector2f(SLIDERS_WIDTH/2.0 - 5,SLIDERS_HEIGHT), sf::Color::Black, font);
+LatchingButton init_latching_button(const std::string& text, const sf::Vector2f position, const sf::Vector2f size ,const sf::Font &font) {
+    auto button = LatchingButton(position, size, sf::Color::Black, font);
     button.set_new_button_hover_color(sf::Color(0, 102, 51));
     button.set_new_button_pressed_color(sf::Color(0, 66, 33));
     button.set_text(text);
@@ -233,8 +232,8 @@ void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
     brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(), 255));
 }
 
-void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height) {
-    sf::Image image(sf::Vector2u(width, height), sf::Color::Black);
+void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, const map_t &map, const size_t width, const size_t height, const sf::Color &background_color) {
+    sf::Image image(sf::Vector2u(width, height), background_color);
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
@@ -269,23 +268,40 @@ void try_move_tile(map_t &map, const int x, const int y, const int new_x, const 
 }
 
 void apply_physics(map_t &map) {
-    const int width = static_cast<int>(map.size() - 2);
-    const int height = static_cast<int>(map[0].size());
+    const int height = static_cast<int>(map.size());
+    const int width = static_cast<int>(map[0].size());
 
-    for (int y = width; y >= 0; --y) {
-        for (int x = 0; x <height; ++x) {
+    map_t new_map = map;
+
+    for (int y = height - 2; y >= 0; --y) {
+        std::vector<int> x_indices(width);
+        std::iota(x_indices.begin(), x_indices.end(), 0);
+        std::shuffle(x_indices.begin(), x_indices.end(), fast_rng);
+
+        for (int x : x_indices) {
             if (map[y][x].value == TileType::SAND) {
-                try_move_tile(map, x, y, x, y +1);
-
-                if (fast_rng() % 100 < 50) {
-                    try_move_tile(map, x, y, x + 1, y+1);
-                } else {
-                    try_move_tile(map, x, y, x - 1, y +1);
+                if (map[y + 1][x].value == TileType::AIR) {
+                    new_map[y + 1][x] = map[y][x];
+                    new_map[y][x].value = TileType::AIR;
                 }
+                else {
+                    std::vector<std::pair<int, int>> directions;
+                    if (x > 0 && map[y + 1][x - 1].value == TileType::AIR)
+                        directions.emplace_back(x - 1, y + 1);
+                    if (x + 1 < width && map[y + 1][x + 1].value == TileType::AIR)
+                        directions.emplace_back(x + 1, y + 1);
 
+                    if (!directions.empty()) {
+                        auto [nx, ny] = directions[fast_rng() % directions.size()];
+                        new_map[ny][nx] = map[y][x];
+                        new_map[y][x].value = TileType::AIR;
+                    }
+                }
             }
         }
     }
+    map = std::move(new_map);
+
 }
 
 void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f offset, const int radius, const sf::Color color, const TileType draw_with) {
@@ -295,6 +311,7 @@ void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f of
 
     if (grid_x < 0 || grid_x >= map[0].size() || grid_y < 0 || grid_y >= map.size()) return;
 
+    std::vector<std::pair<int, int>> points;
     for (int dy = -radius; dy <= radius; ++dy) {
         for (int dx = -radius; dx <= radius; ++dx) {
             if (dx * dx + dy * dy > radius * radius) continue;
@@ -303,32 +320,40 @@ void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f of
             int y = grid_y + dy;
             if (x < 0 || x >= map[0].size() || y < 0 || y >= map.size()) continue;
 
-            tile &t = map[y][x];
+            points.emplace_back(x, y);
+        }
+    }
 
+    std::sort(points.begin(), points.end(), [](const auto& a, const auto& b) {
+        return a.second > b.second;
+    });
 
-            switch (draw_with) {
-                case TileType::SAND:
-                    if (t.value != TileType::SAND && t.value != TileType::SOLID) {
-                        t.value = draw_with;
-                        t.color = color;
-                    }
-                    break;
-                case TileType::AIR:
-                    if (t.value == TileType::SAND || t.value == TileType::SOLID) {
-                        t.value = draw_with;
-                        t.color = color;
-                    }
-                    break;
-                case TileType::SOLID:
-                    if (t.value == TileType::AIR) {
-                        t.value = draw_with;
-                        t.color = color;
-                    }
-                    break;
-            }
+    for (const auto& [x, y] : points) {
+        tile &t = map[y][x];
+
+        switch (draw_with) {
+            case TileType::SAND:
+                if (t.value != TileType::SAND && t.value != TileType::SOLID) {
+                    t.value = draw_with;
+                    t.color = color;
+                }
+            break;
+            case TileType::AIR:
+                if (t.value == TileType::SAND || t.value == TileType::SOLID) {
+                    t.value = draw_with;
+                    t.color = color;
+                }
+            break;
+            case TileType::SOLID:
+                if (t.value == TileType::AIR) {
+                    t.value = draw_with;
+                    t.color = color;
+                }
+            break;
         }
     }
 }
+
 
 std::string generate_filename() {
 
@@ -364,16 +389,24 @@ int main() {
 
     auto brush_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,250),0, 50,pixel_font);
 
+    auto background_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,600),0, 50,pixel_font);
+
+
     sf::RenderWindow window = init_screen(window_size);
 
     auto start_color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(),
                                  brush_color_sliders[2].get_slider_value(), brush_color_sliders[3].get_slider_value());
 
+
     auto color_preview_screen = init_preview_screen(sf::Vector2f(SLIDERS_X_OFFSET, 80),sf::Vector2f(SLIDERS_WIDTH, SLIDERS_WIDTH), start_color);
 
-    auto solid_button = init_latching_button("Solid", sf::Vector2f(SLIDERS_X_OFFSET, 450), pixel_font);
+    auto solid_button = init_latching_button("Solid", sf::Vector2f(SLIDERS_X_OFFSET, 450),sf::Vector2f(SLIDERS_WIDTH/2.0 - 5,SLIDERS_HEIGHT), pixel_font);
 
-    auto colorful_button = init_latching_button("Colorful", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 450),pixel_font);
+    auto R_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 250),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
+
+    auto G_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 300),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
+
+    auto B_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 350),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
 
     auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET, 550), pixel_font);
 
@@ -384,6 +417,7 @@ int main() {
     TileType element;
 
     auto color = get_color_from_sliders(brush_color_sliders);
+    auto background_color = get_color_from_sliders(background_color_sliders);
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -398,14 +432,19 @@ int main() {
                 }
             }
 
-            colorful_button.logic(window);
             brush_size_slider.logic(window);
 
             for (auto &brush_color_slider: brush_color_sliders) {
                 brush_color_slider.logic(window);
             }
 
+            for (auto &background_color_slider: background_color_sliders) {
+                background_color_slider.logic(window);
+            }
+
             update_sliders_colors(brush_color_sliders);
+
+            update_sliders_colors(background_color_sliders);
 
             solid_button.logic(window);
             handle_solid_button(solid_button.get_state(), element);
@@ -420,12 +459,20 @@ int main() {
 
             solidify_button.logic(window);
             handle_solidify_button(solidify_button.pressed(),map);
+
+            R_color_button.logic(window);
+            G_color_button.logic(window);
+            B_color_button.logic(window);
         }
 
-        if (colorful_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
-            for (size_t i = 0; i < brush_color_sliders.size() - 1; ++i) {
-                brush_color_sliders[i].set_slider_value((brush_color_sliders[i].get_slider_value() + 1) % 255);
-            }
+        if (R_color_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
+            brush_color_sliders[0].set_slider_value((brush_color_sliders[0].get_slider_value() + 1) % 255);
+        }
+        if (G_color_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
+            brush_color_sliders[1].set_slider_value((brush_color_sliders[1].get_slider_value() + 1) % 255);
+        }
+        if (B_color_button.get_state() && mouse_in_bounds(window_map_bounds, window) && left_mouse_button_pressed()) {
+            brush_color_sliders[2].set_slider_value((brush_color_sliders[2].get_slider_value() + 1) % 255);
         }
 
         color = get_color_from_sliders(brush_color_sliders);
@@ -443,17 +490,27 @@ int main() {
         //Drawing part
         window.clear();
 
-        draw_map_as_sprite(window, draw_map_offset, map, map_size.x, map_size.y);
+        background_color = get_color_from_sliders(background_color_sliders);
+
+        draw_map_as_sprite(window, draw_map_offset, map, map_size.x, map_size.y, background_color);
+
         brush_size_slider.draw(window);
 
         for (auto &brush_color_slider: brush_color_sliders) {
             brush_color_slider.draw(window);
         }
+
+        for (auto &background_color_slider: background_color_sliders) {
+            background_color_slider.draw(window);
+        }
+
         unsolidify_button.draw(window);
         reset_button.draw(window);
         solid_button.draw(window);
-        colorful_button.draw(window);
         solidify_button.draw(window);
+        R_color_button.draw(window);
+        G_color_button.draw(window);
+        B_color_button.draw(window);
         window.draw(color_preview_screen);
 
         window.display();

@@ -12,18 +12,6 @@
 #include "components/Button.h"
 #include "components/Slider.h"
 
-#define SLIDERS_WIDTH 150
-#define SLIDERS_HEIGHT 30
-#define SLIDERS_X_OFFSET 10
-
-#define PIXEL_SIZE 3
-
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 840
-
-#define MAP_WIDTH 256
-#define MAP_HEIGHT 256
-
 #define IMG_FOLDER "screenshots"
 
 bool LEFT_MOUSE_BUTTON_STATE= false;
@@ -44,25 +32,25 @@ sf::RenderWindow init_screen(const sf::Vector2u window_size) {
 }
 
 std::vector<Slider> init_color_sliders(const sf::Vector2f position, const int x_spacing, const int y_spacing, const sf::Font &font, const uint8_t sliders_start_value) {
-    auto R_slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
+    auto R_slider = Slider(position, sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
     R_slider.set_text("Red Value");
     R_slider.set_slider_color(sf::Color::Red);
     R_slider.set_slider_value(sliders_start_value);
 
     auto G_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + y_spacing)),
-                             sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
     G_slider.set_text("Green Value");
     G_slider.set_slider_color(sf::Color::Green);
     G_slider.set_slider_value(sliders_start_value);
 
     auto B_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 2 * y_spacing)),
-                             sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
     B_slider.set_text("Blue Value");
     B_slider.set_slider_color(sf::Color::Blue);
     B_slider.set_slider_value(sliders_start_value);
 
     auto A_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 3 * y_spacing)),
-                             sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 255, font);
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
     A_slider.set_text("Alpha Value");
     A_slider.set_slider_color(sf::Color::Transparent);
     A_slider.set_slider_value(128);
@@ -92,7 +80,7 @@ sf::Font load_font() {
 }
 
 sf::RectangleShape get_map_screen_bounds(const sf::Vector2u map_size, const sf::Vector2f screen_map_offset) {
-    auto map_rect = sf::RectangleShape(sf::Vector2f(static_cast<float>(map_size.x * PIXEL_SIZE), static_cast<float>(map_size.y * PIXEL_SIZE)));
+    auto map_rect = sf::RectangleShape(sf::Vector2f(static_cast<float>(map_size.x * Config::PIXEL_SIZE), static_cast<float>(map_size.y * Config::PIXEL_SIZE)));
     map_rect.setPosition(screen_map_offset);
     return map_rect;
 }
@@ -110,7 +98,7 @@ sf::RectangleShape init_preview_screen(sf::Vector2f position, sf::Vector2f size,
 }
 Slider init_brush_size_slider(const sf::Vector2f position, const sf::Font &font) {
 
-    auto slider = Slider(position, sf::Vector2f(SLIDERS_WIDTH,SLIDERS_HEIGHT), 0, 64, font);
+    auto slider = Slider(position, sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 64, font);
     slider.set_text("Brush Size");
     slider.set_slider_color(sf::Color(0, 102, 51));
     slider.set_slider_value(10);
@@ -125,7 +113,7 @@ LatchingButton init_latching_button(const std::string& text, const sf::Vector2f 
     return button;
 }
 MomentaryButton init_momentary_button(const std::string &text, const sf::Vector2f position, const sf::Font &font) {
-    auto button = MomentaryButton(position, sf::Vector2f(SLIDERS_WIDTH/2.0 - 5,SLIDERS_HEIGHT), sf::Color::Black, font);
+    auto button = MomentaryButton(position, sf::Vector2f(Config::SLIDERS_WIDTH/2.0 - 5,Config::SLIDERS_HEIGHT), sf::Color::Black, font);
     button.set_new_button_hover_color(sf::Color(0, 102, 51));
     button.set_new_button_pressed_color(sf::Color(0, 66, 33));
     button.set_text(text);
@@ -181,8 +169,8 @@ void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
 
 void use_brush(const sf::RenderWindow &window, SandMap &map, const sf::Vector2f offset, const int radius, const sf::Color color, const TileType draw_with) {
     const sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-    const int grid_x = (mousePos.x - static_cast<int>(offset.x)) / PIXEL_SIZE;
-    const int grid_y = (mousePos.y - static_cast<int>(offset.y)) / PIXEL_SIZE;
+    const int grid_x = (mousePos.x - static_cast<int>(offset.x)) / Config::PIXEL_SIZE;
+    const int grid_y = (mousePos.y - static_cast<int>(offset.y)) / Config::PIXEL_SIZE;
 
     if (grid_x < 0 || grid_x >= map[0].size() || grid_y < 0 || grid_y >= map.getHeight()) return;
 
@@ -247,14 +235,14 @@ std::string generate_filename() {
 int main() {
     std::filesystem::create_directories(IMG_FOLDER);
 
-    auto window_size = sf::Vector2f(SCREEN_WIDTH,SCREEN_HEIGHT);
-    auto map_size = sf::Vector2u(MAP_WIDTH,MAP_HEIGHT);
+    auto window_size = sf::Vector2f(Config::SCREEN_WIDTH,Config::SCREEN_HEIGHT);
+    auto map_size = sf::Vector2u(Config::MAP_WIDTH,Config::MAP_HEIGHT);
 
     sf::RenderWindow window = init_screen(sf::Vector2u(window_size));
 
     auto map = SandMap(map_size, window);
 
-    auto draw_map_offset = sf::Vector2f(static_cast<float>((window_size.x/2.0 - (map_size.x * PIXEL_SIZE)/2.0)),static_cast<float>((window_size.y/2.0 - (map_size.y * PIXEL_SIZE)/2.0)));
+    auto draw_map_offset = sf::Vector2f(static_cast<float>((window_size.x/2.0 - (map_size.x * Config::PIXEL_SIZE)/2.0)),static_cast<float>((window_size.y/2.0 - (map_size.y * Config::PIXEL_SIZE)/2.0)));
 
     auto pixel_font = load_font();
 
@@ -262,31 +250,35 @@ int main() {
         map_size,
         draw_map_offset);
 
-    auto brush_size_slider = init_brush_size_slider(sf::Vector2f(SLIDERS_X_OFFSET,static_cast<float>(static_cast<int>(draw_map_offset.y))),pixel_font);
+    auto brush_size_slider = init_brush_size_slider(sf::Vector2f(10
+,static_cast<float>(static_cast<int>(draw_map_offset.y))),pixel_font);
 
-    auto brush_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,250),0, 50,pixel_font,128);
+    auto brush_color_sliders = init_color_sliders(sf::Vector2f(10
+,250),0, 50,pixel_font,128);
 
-    auto background_color_sliders = init_color_sliders(sf::Vector2f(SLIDERS_X_OFFSET,600),0, 50,pixel_font, 0);
+    auto background_color_sliders = init_color_sliders(sf::Vector2f(10
+,600),0, 50,pixel_font, 0);
 
     auto start_color = sf::Color(brush_color_sliders[0].get_slider_value(), brush_color_sliders[1].get_slider_value(),
                                  brush_color_sliders[2].get_slider_value(), brush_color_sliders[3].get_slider_value());
 
 
-    auto color_preview_screen = init_preview_screen(sf::Vector2f(SLIDERS_X_OFFSET, 80),sf::Vector2f(SLIDERS_WIDTH, SLIDERS_WIDTH), start_color);
+    auto color_preview_screen = init_preview_screen(sf::Vector2f(10
+, 80),sf::Vector2f(Config::SLIDERS_WIDTH, Config::SLIDERS_WIDTH), start_color);
 
-    auto reset_button = init_momentary_button("Clear", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 450), pixel_font);
+    auto reset_button = init_momentary_button("Clear", sf::Vector2f(10 + Config::SLIDERS_WIDTH/2.0 + 5, 450), pixel_font);
 
-    auto solid_button = init_latching_button("Solid", sf::Vector2f(SLIDERS_X_OFFSET, 450),sf::Vector2f(SLIDERS_WIDTH/2.0 - 5,SLIDERS_HEIGHT), pixel_font);
+    auto solid_button = init_latching_button("Solid", sf::Vector2f(10, 450),sf::Vector2f(Config::SLIDERS_WIDTH/2.0 - 5,Config::SLIDERS_HEIGHT), pixel_font);
 
-    auto R_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 250),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
+    auto R_color_button = init_latching_button("Rand", sf::Vector2f(10+ Config::SLIDERS_WIDTH + 10, 250),sf::Vector2f(Config::SLIDERS_HEIGHT,Config::SLIDERS_HEIGHT),pixel_font);
 
-    auto G_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 300),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
+    auto G_color_button = init_latching_button("Rand", sf::Vector2f(10+ Config::SLIDERS_WIDTH + 10, 300),sf::Vector2f(Config::SLIDERS_HEIGHT,Config::SLIDERS_HEIGHT),pixel_font);
 
-    auto B_color_button = init_latching_button("Rand", sf::Vector2f(SLIDERS_X_OFFSET+ SLIDERS_WIDTH + 10, 350),sf::Vector2f(SLIDERS_HEIGHT,SLIDERS_HEIGHT),pixel_font);
+    auto B_color_button = init_latching_button("Rand", sf::Vector2f(10+ Config::SLIDERS_WIDTH + 10, 350),sf::Vector2f(Config::SLIDERS_HEIGHT,Config::SLIDERS_HEIGHT),pixel_font);
 
-    auto unsolidify_button = init_momentary_button("Unsolidify", sf::Vector2f(SLIDERS_X_OFFSET + SLIDERS_WIDTH/2.0 + 5, 500), pixel_font);
+    auto unsolidify_button = init_momentary_button("Unsolidify", sf::Vector2f(10 + Config::SLIDERS_WIDTH/2.0 + 5, 500), pixel_font);
 
-    auto solidify_button = init_momentary_button("Solidify", sf::Vector2f(SLIDERS_X_OFFSET, 500), pixel_font);
+    auto solidify_button = init_momentary_button("Solidify", sf::Vector2f(10, 500), pixel_font);
 
     TileType element;
 

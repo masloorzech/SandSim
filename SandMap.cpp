@@ -52,11 +52,11 @@ void SandMap::draw(const sf::Vector2f offset, const sf::Color &background_color)
     texture.loadFromImage(image);
 
     sf::Sprite sprite(texture);
-    sprite.setScale(sf::Vector2f(static_cast<float>(PIXEL_SIZE), static_cast<float>(PIXEL_SIZE)));
+    sprite.setScale(sf::Vector2f(static_cast<float>(Config::PIXEL_SIZE), static_cast<float>(Config::PIXEL_SIZE)));
     sprite.setPosition(offset);
 
-    sf::RectangleShape frame(sf::Vector2f(static_cast<float>(width) * PIXEL_SIZE, static_cast<float>(height) * PIXEL_SIZE));
-    frame.setOutlineThickness(PIXEL_SIZE);
+    sf::RectangleShape frame(sf::Vector2f(static_cast<float>(width) * Config::PIXEL_SIZE, static_cast<float>(height) * Config::PIXEL_SIZE));
+    frame.setOutlineThickness(Config::PIXEL_SIZE);
     frame.setOutlineColor(sf::Color::White);
     frame.setFillColor(sf::Color::Transparent);
     frame.setPosition(offset);

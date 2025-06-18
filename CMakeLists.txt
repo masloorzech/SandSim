@@ -17,6 +17,13 @@ find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 
 add_executable(Sand_simulation main.cpp components/Slider.cpp utils/color_utils.cpp components/Button.cpp SandMap.cpp)
 
+target_include_directories(Sand_simulation PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/components
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/Tile
+)
+
 if(WIN32)
     target_include_directories(Sand_simulation PRIVATE "${SFML_INCLUDE_DIR}")
 endif()

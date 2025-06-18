@@ -10,7 +10,6 @@ Button::Button(const sf::Vector2f position, const sf::Vector2f size, const sf::C
 label(font){
     button.setPosition(position);
     button.setSize(size);
-    button.setFillColor(color);
 
     button_nonpressed_color = color;
 

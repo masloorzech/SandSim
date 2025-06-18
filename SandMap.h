@@ -5,16 +5,11 @@
 #ifndef SANDMAP_H
 #define SANDMAP_H
 
-#include <cmath>
 #include <filesystem>
-#include <iostream>
 #include <vector>
 #include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <random>
-#include <Windows.h>
-#include "Tile/Tile.h"
-#include "globals.h"
+#include "Tile.h"
+#include "Config.h"
 
 class SandMap {
     std::vector<std::vector<Tile>> map;

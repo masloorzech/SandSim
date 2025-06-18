@@ -6,7 +6,7 @@
 #include <SFML/Window.hpp>
 #include <random>
 #include <Windows.h>
-
+#include "Tile.h"
 
 #include "components/Button.h"
 #include "components/Slider.h"
@@ -27,18 +27,7 @@
 
 bool LEFT_MOUSE_BUTTON_STATE= false;
 
-enum class TileType {
-    AIR = 0,
-    SAND = 1,
-    SOLID = 2
-};
-
-struct tile {
-    TileType value = TileType::AIR;
-    sf::Color color = sf::Color::Black;
-};
-
-using map_t = std::vector<std::vector<tile>>;
+using map_t = std::vector<std::vector<Tile>>;
 
 std::minstd_rand fast_rng(std::random_device{}());
 
@@ -58,12 +47,12 @@ sf::RenderWindow init_screen(const sf::Vector2u window_size) {
 }
 
 map_t init_map(const sf::Vector2u map_size) {
-    map_t map(map_size.x, std::vector<tile>(map_size.y));
+    map_t map(map_size.x, std::vector<Tile>(map_size.y));
 
     for (unsigned int x = 0; x < map_size.x; ++x) {
         for (unsigned int y = 0; y < map_size.y; ++y) {
-            map[x][y].value = TileType::AIR;
-            map[x][y].color = sf::Color::Black;
+            map[x][y].setValue(TileType::AIR);
+            map[x][y].setColor(sf::Color::Black);
         }
     }
     return map;
@@ -118,8 +107,8 @@ bool save_map_as_image(const map_t &map, const std::string &filename) {
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            if (map[y][x].value == TileType::SAND) {
-                image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+            if (map[y][x].getValue() == TileType::SAND) {
+                image.setPixel(sf::Vector2u(x, y), map[y][x].getColor());
             }
         }
     }
@@ -195,8 +184,8 @@ void handle_reset_button(const bool state, map_t& map, std::vector<Slider>& brus
     if (state) {
         for (auto &row: map) {
             for (auto &col: row) {
-                col.color = sf::Color::Black;
-                col.value = TileType::AIR;
+                col.setColor(sf::Color::Black);
+                col.setValue(TileType::AIR);
             }
         }
         for (auto &brush_color_slider: brush_color_sliders) {
@@ -217,8 +206,8 @@ void handle_unsolidify_button(const bool state, map_t& map) {
     if (state) {
         for (auto &row: map) {
             for (auto &col: row) {
-                if (col.value == TileType::SOLID) {
-                    col.value = TileType::SAND;
+                if (col.getValue() == TileType::SOLID) {
+                    col.setValue(TileType::SAND);
                 }
             }
         }
@@ -229,8 +218,8 @@ void handle_solidify_button(const bool state, map_t& map) {
     if (state) {
         for (auto &row: map) {
             for (auto &col: row) {
-                if (col.value == TileType::SAND) {
-                    col.value = TileType::SOLID;
+                if (col.getValue() == TileType::SAND) {
+                    col.setValue(TileType::SOLID);
                 }
             }
         }
@@ -249,8 +238,8 @@ void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, con
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            if (map[y][x].value != TileType::AIR) {
-                image.setPixel(sf::Vector2u(x, y), map[y][x].color);
+            if (map[y][x].getValue() != TileType::AIR) {
+                image.setPixel(sf::Vector2u(x, y), map[y][x].getColor());
             }
         }
     }
@@ -274,9 +263,9 @@ void draw_map_as_sprite(sf::RenderWindow &window, const sf::Vector2f offset, con
 }
 
 void try_move_tile(map_t &map, const int x, const int y, const int new_x, const int new_y) {
-    if (new_x >= 0 && new_x < map[0].size() && new_y >= 0 && new_y < map.size() && map[new_y][new_x].value == TileType::AIR) {
+    if (new_x >= 0 && new_x < map[0].size() && new_y >= 0 && new_y < map.size() && map[new_y][new_x].getValue() == TileType::AIR) {
         map[new_y][new_x] = map[y][x];
-        map[y][x].value = TileType::AIR;
+        map[y][x].setValue(TileType::AIR);
     }
 }
 
@@ -284,37 +273,40 @@ void apply_physics(map_t &map) {
     const int height = static_cast<int>(map.size());
     const int width = static_cast<int>(map[0].size());
 
-    map_t new_map = map;
-
     for (int y = height - 2; y >= 0; --y) {
         std::vector<int> x_indices(width);
         std::iota(x_indices.begin(), x_indices.end(), 0);
         std::shuffle(x_indices.begin(), x_indices.end(), fast_rng);
 
         for (int x : x_indices) {
-            if (map[y][x].value == TileType::SAND) {
-                if (map[y + 1][x].value == TileType::AIR) {
-                    new_map[y + 1][x] = map[y][x];
-                    new_map[y][x].value = TileType::AIR;
+            if (map[y][x].getValue() == TileType::SAND) {
+                if (y + 1 < height && map[y + 1][x].getValue() == TileType::AIR) {
+                    map[y + 1][x] = map[y][x];
+                    map[y][x].setValue(TileType::AIR);
+                    map[y][x].setColor(sf::Color::Black);
                 }
-                else {
-                    std::vector<std::pair<int, int>> directions;
-                    if (x > 0 && map[y + 1][x - 1].value == TileType::AIR)
-                        directions.emplace_back(x - 1, y + 1);
-                    if (x + 1 < width && map[y + 1][x + 1].value == TileType::AIR)
-                        directions.emplace_back(x + 1, y + 1);
+                else if (y + 1 < height) {
+                    std::vector<int> directions;
+
+                    if (x > 0 && map[y + 1][x - 1].getValue() == TileType::AIR) {
+                        directions.push_back(-1);
+                    }
+                    if (x + 1 < width && map[y + 1][x + 1].getValue() == TileType::AIR) {
+                        directions.push_back(1);
+                    }
 
                     if (!directions.empty()) {
-                        auto [nx, ny] = directions[fast_rng() % directions.size()];
-                        new_map[ny][nx] = map[y][x];
-                        new_map[y][x].value = TileType::AIR;
+                        int direction = directions[fast_rng() % directions.size()];
+                        int new_x = x + direction;
+
+                        map[y + 1][new_x] = map[y][x];
+                        map[y][x].setValue(TileType::AIR);
+                        map[y][x].setColor(sf::Color::Black);
                     }
                 }
             }
         }
     }
-    map = std::move(new_map);
-
 }
 
 void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f offset, const int radius, const sf::Color color, const TileType draw_with) {
@@ -338,31 +330,33 @@ void use_brush(const sf::RenderWindow &window, map_t &map, const sf::Vector2f of
     }
 
     std::sort(points.begin(), points.end(), [](const auto& a, const auto& b) {
-        return a.second > b.second;
+        return a.second < b.second;
     });
 
     for (const auto& [x, y] : points) {
-        tile &t = map[y][x];
+        Tile &t = map[y][x];
 
         switch (draw_with) {
             case TileType::SAND:
-                if (t.value != TileType::SAND && t.value != TileType::SOLID) {
-                    t.value = draw_with;
-                    t.color = color;
+                if (t.getValue() != TileType::SOLID && t.getValue()!= TileType::SAND) {
+                    t.setValue(TileType::SAND);
+                    t.setColor(color);
                 }
-            break;
+                break;
+
             case TileType::AIR:
-                if (t.value == TileType::SAND || t.value == TileType::SOLID) {
-                    t.value = draw_with;
-                    t.color = color;
+                if (t.getValue() != TileType::AIR) {
+                    t.setValue(TileType::AIR);
+                    t.setColor(sf::Color::Black);
                 }
-            break;
+                break;
+
             case TileType::SOLID:
-                if (t.value == TileType::AIR) {
-                    t.value = draw_with;
-                    t.color = color;
+                if (t.getValue() == TileType::AIR) {
+                    t.setValue(TileType::SOLID);
+                    t.setColor(color);
                 }
-            break;
+                break;
         }
     }
 }

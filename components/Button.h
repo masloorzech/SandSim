@@ -44,8 +44,11 @@ class Button{
 };
 
 class MomentaryButton : public Button{
+
     long press_count;
+
     long last_pressed_count;
+
     public:
       using Button::Button;
       void logic(sf::RenderWindow &window) override;
@@ -53,6 +56,7 @@ class MomentaryButton : public Button{
 };
 
 class LatchingButton : public Button{
+
     bool wasPressed = false;
 
     bool latched = false;

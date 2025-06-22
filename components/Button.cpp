@@ -121,3 +121,49 @@ bool LatchingButton::get_state() const {
 void LatchingButton::change_state(bool state) {
     latched = state;
 }
+
+
+void handle_reset_button(const bool state, SandMap& map, std::vector<Slider>& brush_color_sliders) {
+    if (state) {
+        map.clear();
+        for (auto &brush_color_slider: brush_color_sliders) {
+            brush_color_slider.set_slider_value(127);
+        }
+    }
+}
+
+void handle_solid_button(const bool state, TileType& element) {
+    if (state) {
+        element = TileType::SOLID;
+    } else {
+        element = TileType::SAND;
+    }
+}
+
+void handle_unsolidify_button(const bool state, SandMap& map) {
+    if (state) {
+        map.changeType(TileType::SOLID, TileType::SAND);
+    }
+}
+
+void handle_solidify_button(const bool state, SandMap& map) {
+    if (state) {
+        map.changeType(TileType::SAND, TileType::SOLID);
+    }
+}
+
+LatchingButton init_latching_button(const std::string& text, const sf::Vector2f position, const sf::Vector2f size ,const sf::Font &font) {
+    auto button = LatchingButton(position, size, sf::Color::Black, font);
+    button.set_new_button_hover_color(sf::Color(0, 102, 51));
+    button.set_new_button_pressed_color(sf::Color(0, 66, 33));
+    button.set_text(text);
+    return button;
+}
+
+MomentaryButton init_momentary_button(const std::string &text, const sf::Vector2f position, const sf::Font &font) {
+    auto button = MomentaryButton(position, sf::Vector2f(Config::SLIDERS_WIDTH/2.0 - 5,Config::SLIDERS_HEIGHT), sf::Color::Black, font);
+    button.set_new_button_hover_color(sf::Color(0, 102, 51));
+    button.set_new_button_pressed_color(sf::Color(0, 66, 33));
+    button.set_text(text);
+    return button;
+}

@@ -96,3 +96,44 @@ void Slider::set_slider_value(int value) {
     }
     slider_value_label.setString(std::to_string(slider_value+1));
 }
+
+std::vector<Slider> init_color_sliders(const sf::Vector2f position, const int x_spacing, const int y_spacing, const sf::Font &font, const uint8_t sliders_start_value) {
+    auto R_slider = Slider(position, sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
+    R_slider.set_text("Red Value");
+    R_slider.set_slider_color(sf::Color::Red);
+    R_slider.set_slider_value(sliders_start_value);
+
+    auto G_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + y_spacing)),
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
+    G_slider.set_text("Green Value");
+    G_slider.set_slider_color(sf::Color::Green);
+    G_slider.set_slider_value(sliders_start_value);
+
+    auto B_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 2 * y_spacing)),
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
+    B_slider.set_text("Blue Value");
+    B_slider.set_slider_color(sf::Color::Blue);
+    B_slider.set_slider_value(sliders_start_value);
+
+    auto A_slider = Slider(sf::Vector2f(static_cast<float>(static_cast<int>(position.x) + x_spacing), static_cast<float>(static_cast<int>(position.y) + 3 * y_spacing)),
+                             sf::Vector2f(Config::SLIDERS_WIDTH,Config::SLIDERS_HEIGHT), 0, 255, font);
+    A_slider.set_text("Alpha Value");
+    A_slider.set_slider_color(sf::Color::Transparent);
+    A_slider.set_slider_value(128);
+
+    auto brush_color_sliders = std::vector<Slider>();
+
+    brush_color_sliders.push_back(R_slider);
+    brush_color_sliders.push_back(G_slider);
+    brush_color_sliders.push_back(B_slider);
+    brush_color_sliders.push_back(A_slider);
+
+    return brush_color_sliders;
+}
+
+void update_sliders_colors(std::vector<Slider>& brush_color_sliders) {
+    brush_color_sliders[0].set_slider_color(sf::Color(brush_color_sliders[0].get_slider_value(), 0, 0, 255));
+    brush_color_sliders[1].set_slider_color(sf::Color(0, brush_color_sliders[1].get_slider_value(), 0, 255));
+    brush_color_sliders[2].set_slider_color(sf::Color(0, 0, brush_color_sliders[2].get_slider_value(), 255));
+    brush_color_sliders[3].set_slider_color(sf::Color(brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(),brush_color_sliders[3].get_slider_value(), 255));
+}

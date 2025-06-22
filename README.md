@@ -6,6 +6,13 @@
   <img src="https://github.com/user-attachments/assets/525ad3d7-895e-44d8-a019-a42768cb0c09" alt="SandSim Screenshot"/>
 </div>
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/fabe29cc-9dd2-40c8-8d1e-61d95578229d" width="150" />
+  <img src="https://github.com/user-attachments/assets/b808b61f-eed7-4dcd-910e-bb49c9aa0f2b" width="150" />
+  <img src="https://github.com/user-attachments/assets/df36ea80-1d3c-4692-8ece-77c99df60909" width="150" />
+  <img src="https://github.com/user-attachments/assets/c62e4484-e208-4074-aa21-efe4d0626ab4" width="150" />
+  <img src="https://github.com/user-attachments/assets/148343c4-45f6-44ed-883c-d76deeabedaf" width="150" />
+</p>
 
 ## ✨ Features
 

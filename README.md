@@ -66,3 +66,5 @@ Inspired by classic falling sand games and cellular automata projects, **SandSim
 ## 📃 License
 
 MIT License.
+
+<!-- SEO keywords: SandSim, sandsim, falling sand simulation, sandbox simulation, cellular automata, SFML C++, sandbox particle simulator, falling sand game, C++ sandbox game -->

@@ -90,7 +90,7 @@ int main() {
                     window.close();
                 }
                 if (keyPressed->scancode == sf::Keyboard::Scancode::F2) {
-                    map.save(generate_filename());
+                    map.save(generate_filename(), background_color);
                 }
             }
 

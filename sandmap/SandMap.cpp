@@ -103,13 +103,13 @@ void SandMap::applyPhysics() {
     }
 }
 
-void SandMap::save(const std::string &filename) {
+void SandMap::save(const std::string &filename, sf::Color background_color) {
 
-    sf::Image image(sf::Vector2u(width, height), sf::Color::Black);
+    sf::Image image(sf::Vector2u(width, height), background_color);
 
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            if (map[y][x].getValue() == TileType::SAND) {
+            if (map[y][x].getValue() != TileType::AIR) {
                 image.setPixel(sf::Vector2u(x, y), map[y][x].getColor());
             }
         }

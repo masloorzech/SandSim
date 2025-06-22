@@ -37,7 +37,7 @@ public:
 
     void draw(sf::Vector2f offset, const sf::Color &background_color);
 
-    void save(const std::string &filename);
+    void save(const std::string &filename, sf::Color background_color);
 
 };
 

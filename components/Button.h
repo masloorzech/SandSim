@@ -8,7 +8,8 @@
 
 #include <SFML/Graphics.hpp>
 #include <functional>
-
+#include <Slider.h>
+#include <sandmap/SandMap.h>
 
 class Button{
     protected:
@@ -69,5 +70,10 @@ class LatchingButton : public Button{
     void change_state(bool state);
 };
 
-
+void handle_reset_button(const bool state, SandMap& map, std::vector<Slider>& brush_color_sliders);
+void handle_solid_button(const bool state, TileType& element);
+void handle_unsolidify_button(const bool state, SandMap& map);
+void handle_solidify_button(const bool state, SandMap& map);
+LatchingButton init_latching_button(const std::string& text, const sf::Vector2f position, const sf::Vector2f size ,const sf::Font &font);
+MomentaryButton init_momentary_button(const std::string &text, const sf::Vector2f position, const sf::Font &font);
 #endif //SELECTION_MENU_H

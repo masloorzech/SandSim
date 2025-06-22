@@ -1,6 +1,6 @@
-# 🌟 SandSim
+# 🌟 SandSim — Falling Sand Simulation in C++ with SFML
 
-**SandSim** is a colorful and creative sandbox-style cellular automata simulation written in **C++** using **SFML**. Draw with falling sand in various colors, experiment with brush sizes, and bring your ideas to life — pixel by pixel.
+**SandSim** is a colorful and creative **sandbox-style cellular automata simulation** written in **C++** using **SFML 3.0+**. Draw with falling sand particles in multiple vibrant colors, experiment with adjustable brush sizes, and bring your ideas to life — pixel by pixel.
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/525ad3d7-895e-44d8-a019-a42768cb0c09" alt="SandSim Screenshot"/>

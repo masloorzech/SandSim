@@ -15,7 +15,7 @@ endif()
 
 find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 
-add_executable(Sand_simulation main.cpp components/Slider.cpp utils/color_utils.cpp components/Button.cpp SandMap.cpp)
+add_executable(Sand_simulation main.cpp components/Slider.cpp brush/brush.cpp utils/color_utils.cpp components/Button.cpp sandmap/SandMap.cpp)
 
 target_include_directories(Sand_simulation PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}

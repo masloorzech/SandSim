@@ -7,8 +7,9 @@
 
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <Config.h>
 
-class Slider {
+class Slider{
 private:
     sf::RectangleShape slider_frame;
     sf::RectangleShape slider;
@@ -39,5 +40,7 @@ public:
 
 };
 
+std::vector<Slider> init_color_sliders(const sf::Vector2f position, const int x_spacing, const int y_spacing, const sf::Font &font, const uint8_t sliders_start_value);
+void update_sliders_colors(std::vector<Slider>& brush_color_sliders);
 
 #endif //SLIDER_H
